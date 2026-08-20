@@ -24,11 +24,19 @@ function normalizePublicUrl(raw: string): string {
   return value
 }
 
+function fqdnToPublicUrl(fqdn: string): string {
+  let host = fqdn.trim()
+  if (!host.includes('://') && /^[^:[\]/]+:\d+$/.test(host)) {
+    host = host.slice(0, host.lastIndexOf(':'))
+  }
+  return normalizePublicUrl(host)
+}
+
 function resolvePublicUrl(...candidates: Array<string | undefined>): string | undefined {
   for (const candidate of candidates) {
     const value = emptyToUndefined(candidate)
     if (!value) continue
-    const normalized = normalizePublicUrl(value)
+    const normalized = value.includes('://') ? normalizePublicUrl(value) : fqdnToPublicUrl(value)
     try {
       new URL(normalized)
       return normalized
@@ -53,26 +61,20 @@ export function loadEnv(): Env {
 
   const authUrl = resolvePublicUrl(
     process.env.BETTER_AUTH_URL,
+    process.env.SERVICE_FQDN_SERVER_3001,
+    process.env.SERVICE_FQDN_SERVER,
     process.env.SERVICE_URL_SERVER,
-    emptyToUndefined(process.env.SERVICE_FQDN_SERVER_3001)
-      ? normalizePublicUrl(process.env.SERVICE_FQDN_SERVER_3001)
-      : undefined,
     process.env.COOLIFY_URL,
-    emptyToUndefined(process.env.COOLIFY_FQDN)
-      ? normalizePublicUrl(process.env.COOLIFY_FQDN)
-      : undefined,
+    process.env.COOLIFY_FQDN,
   )
 
   const webOrigin = resolvePublicUrl(
     process.env.WEB_ORIGIN,
+    process.env.SERVICE_FQDN_WEB_3000,
+    process.env.SERVICE_FQDN_WEB,
     process.env.SERVICE_URL_WEB,
-    emptyToUndefined(process.env.SERVICE_FQDN_WEB_3000)
-      ? normalizePublicUrl(process.env.SERVICE_FQDN_WEB_3000)
-      : undefined,
     process.env.COOLIFY_URL,
-    emptyToUndefined(process.env.COOLIFY_FQDN)
-      ? normalizePublicUrl(process.env.COOLIFY_FQDN)
-      : undefined,
+    process.env.COOLIFY_FQDN,
   )
 
   const parsed = envSchema.safeParse({

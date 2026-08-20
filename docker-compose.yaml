@@ -1,9 +1,12 @@
 # Notula production stack for Coolify (docker-compose.yaml is the default path).
 # Local dev Postgres only: docker-compose.yml
 #
-# Coolify: create ONE resource → Docker Compose → point at this repo.
-# Magic SERVICE_* vars auto-generate domains, URLs, and secrets on first deploy.
-# Override domains in Coolify UI (e.g. notula.dev / api.notula.dev) when ready.
+# Coolify domains (set in UI per service, then redeploy with clear build cache):
+#   web    → https://notes.bluevistastudio.com  (SERVICE_FQDN_WEB_3000)
+#   server → https://api.bluevistastudio.com      (SERVICE_FQDN_SERVER_3001)
+#
+# Coolify bug: SERVICE_URL_* may stay on the old sslip.io URL after you set custom
+# domains. This stack prefers SERVICE_FQDN_* (correct) for runtime + web build.
 
 services:
   postgres:
@@ -51,19 +54,19 @@ services:
     restart: unless-stopped
     environment:
       SERVICE_FQDN_SERVER_3001: ${SERVICE_FQDN_SERVER_3001:-}
+      SERVICE_FQDN_SERVER: ${SERVICE_FQDN_SERVER:-}
       SERVICE_URL_SERVER: ${SERVICE_URL_SERVER:-}
-      SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
       SERVICE_FQDN_WEB_3000: ${SERVICE_FQDN_WEB_3000:-}
-      COOLIFY_FQDN: ${COOLIFY_FQDN:-}
-      COOLIFY_URL: ${COOLIFY_URL:-}
+      SERVICE_FQDN_WEB: ${SERVICE_FQDN_WEB:-}
+      SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
+      WEB_ORIGIN: ${WEB_ORIGIN:-}
       PGHOST: postgres
       PGPORT: '5432'
       PGUSER: ${POSTGRES_USER:-notula}
       PGPASSWORD: ${SERVICE_PASSWORD_POSTGRES:-${POSTGRES_PASSWORD}}
       PGDATABASE: ${POSTGRES_DB:-notula}
       BETTER_AUTH_SECRET: ${SERVICE_REALBASE64_AUTH:-${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET or deploy on Coolify}}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-${SERVICE_URL_SERVER:-}}
-      WEB_ORIGIN: ${WEB_ORIGIN:-${SERVICE_URL_WEB:-}}
       PORT: '3001'
       RUN_MIGRATIONS: 'false'
     depends_on:
@@ -86,12 +89,13 @@ services:
       dockerfile: Dockerfile.web
       args:
         HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
-        VITE_API_URL: ${SERVICE_URL_SERVER:-${VITE_API_URL:-http://server:3001}}
+        VITE_API_URL: ${VITE_API_URL:-}
+        SERVICE_FQDN_SERVER_3001: ${SERVICE_FQDN_SERVER_3001:-}
+        SERVICE_FQDN_SERVER: ${SERVICE_FQDN_SERVER:-}
     restart: unless-stopped
     environment:
       SERVICE_FQDN_WEB_3000: ${SERVICE_FQDN_WEB_3000:-}
-      COOLIFY_FQDN: ${COOLIFY_FQDN:-}
-      COOLIFY_URL: ${COOLIFY_URL:-}
+      SERVICE_FQDN_WEB: ${SERVICE_FQDN_WEB:-}
       PORT: '3000'
       HOST: 0.0.0.0
     depends_on:
@@ -100,11 +104,11 @@ services:
     expose:
       - '3000'
     healthcheck:
-      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://127.0.0.1:3000/\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
 volumes:
   postgres_data:
