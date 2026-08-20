@@ -45,13 +45,13 @@ services:
         HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
     restart: unless-stopped
     environment:
-      - SERVICE_FQDN_SERVER_3001
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-notula}:${SERVICE_PASSWORD_POSTGRES:-${POSTGRES_PASSWORD}}@postgres:5432/${POSTGRES_DB:-notula}
-      - BETTER_AUTH_SECRET=${SERVICE_REALBASE64_AUTH:-${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET or deploy on Coolify}}
-      - BETTER_AUTH_URL=${SERVICE_URL_SERVER:-${BETTER_AUTH_URL:?Set BETTER_AUTH_URL or deploy on Coolify}}
-      - WEB_ORIGIN=${SERVICE_URL_WEB:-${WEB_ORIGIN:?Set WEB_ORIGIN or deploy on Coolify}}
-      - PORT=3001
-      - RUN_MIGRATIONS=false
+      SERVICE_FQDN_SERVER_3001: ''
+      DATABASE_URL: postgresql://${POSTGRES_USER:-notula}:${SERVICE_PASSWORD_POSTGRES:-${POSTGRES_PASSWORD}}@postgres:5432/${POSTGRES_DB:-notula}
+      BETTER_AUTH_SECRET: ${SERVICE_REALBASE64_AUTH:-${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET or deploy on Coolify}}
+      BETTER_AUTH_URL: ${SERVICE_URL_SERVER:-${BETTER_AUTH_URL:?Set BETTER_AUTH_URL or deploy on Coolify}}
+      WEB_ORIGIN: ${SERVICE_URL_WEB:-${WEB_ORIGIN:?Set WEB_ORIGIN or deploy on Coolify}}
+      PORT: '3001'
+      RUN_MIGRATIONS: 'false'
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -75,9 +75,9 @@ services:
         VITE_API_URL: ${SERVICE_URL_SERVER:-${VITE_API_URL:?Set VITE_API_URL or deploy on Coolify}}
     restart: unless-stopped
     environment:
-      - SERVICE_FQDN_WEB_3000
-      - PORT=3000
-      - HOST=0.0.0.0
+      SERVICE_FQDN_WEB_3000: ''
+      PORT: '3000'
+      HOST: 0.0.0.0
     depends_on:
       server:
         condition: service_healthy
