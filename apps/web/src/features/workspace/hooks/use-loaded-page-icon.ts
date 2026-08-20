@@ -1,4 +1,4 @@
-import { loadIcon } from '@hugeicons/core-free-icons/loader'
+import { loadIcon } from '@/features/workspace/lib/page-icon-loader'
 import { useQuery } from '@tanstack/react-query'
 
 export function useLoadedPageIcon(iconName: string | undefined) {

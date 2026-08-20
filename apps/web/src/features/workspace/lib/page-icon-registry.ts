@@ -1,4 +1,4 @@
-import { iconExists } from '@hugeicons/core-free-icons/loader'
+import { iconExists } from '@/features/workspace/lib/page-icon-loader'
 import { iconNameToLabel, iconNameToSlug, isPageIconSlug, slugToIconName } from '@/features/workspace/lib/page-icon-slug'
 
 export type PageIconDefinition = {
