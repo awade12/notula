@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AppBrandMark } from '@/features/auth/components/app-brand-mark'
 import { LoginForm } from '@/features/auth/components/login-form'
+import { authClient } from '@/features/auth/lib/auth-client'
 import { getBootstrapSession } from '@/features/auth/lib/bootstrap-session'
 import { useAcceptInvite, useInvitePreview } from '@/features/workspace/hooks/use-space-members'
 import { cn } from '@/lib/cn'
@@ -17,7 +18,9 @@ export const Route = createFileRoute('/invite/$token')({
 function InviteAcceptPage() {
   const { token } = Route.useParams()
   const navigate = useNavigate()
-  const { session } = Route.useLoaderData()
+  const { session: loaderSession } = Route.useLoaderData()
+  const { data: liveSession, isPending: isSessionPending } = authClient.useSession()
+  const sessionUser = liveSession?.user ?? loaderSession.user
   const { data: invite, isLoading, error } = useInvitePreview(token)
   const acceptInvite = useAcceptInvite(token)
   const [acceptError, setAcceptError] = useState<string | null>(null)
@@ -32,7 +35,7 @@ function InviteAcceptPage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || isSessionPending) {
     return (
       <div className="flex h-screen items-center justify-center bg-sidebar">
         <p className="text-sm tracking-dashboard text-text-primary">Loading invite…</p>
@@ -56,7 +59,7 @@ function InviteAcceptPage() {
     )
   }
 
-  if (!session.user) {
+  if (!sessionUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-sidebar px-main py-10">
         <div className="w-full max-w-md space-y-6">

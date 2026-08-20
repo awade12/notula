@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { acceptSpaceInvite } from '@/features/workspace/lib/accept-space-invite'
 import { apiFetch, apiUrl } from '@/lib/api'
 
 export type SpaceMember = {
@@ -132,10 +133,6 @@ export function useInvitePreview(token: string) {
 
 export function useAcceptInvite(token: string) {
   return useMutation({
-    mutationFn: async () => {
-      const response = await apiFetch(`/api/invites/${token}/accept`, { method: 'POST' })
-      if (!response.ok) throw new Error('Could not accept invite')
-      return (await response.json()) as { spaceId: string; alreadyMember: boolean }
-    },
+    mutationFn: async () => acceptSpaceInvite({ data: { token } }),
   })
 }
