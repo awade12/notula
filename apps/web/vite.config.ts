@@ -19,14 +19,7 @@ const config = defineConfig({
     sourcemap: false,
   },
   ssr: {
-    noExternal: [
-      '@tanstack/react-start',
-      '@tanstack/react-router',
-      '@tanstack/react-start-client',
-      '@tanstack/start-client-core',
-      'react',
-      'react-dom',
-    ],
+    noExternal: [/@tanstack\//, 'react', 'react-dom'],
   },
   resolve: {
     alias: existsSync(proIconPack)

@@ -7,6 +7,9 @@
     "node": ">=20"
   },
   "workspaces": ["apps/*", "packages/*", "tooling/*"],
+  "overrides": {
+    "@tanstack/react-store": "0.9.3"
+  },
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "predev": "node scripts/prepare-dev.mjs",
