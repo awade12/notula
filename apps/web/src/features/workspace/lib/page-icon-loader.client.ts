@@ -2,17 +2,158 @@ import '@tanstack/react-start/client-only'
 import type { IconSvgElement } from '@hugeicons/react'
 import iconNames from '@/features/workspace/lib/page-icon-search-index.json'
 
+const ICON_CDN_BASE = 'https://cdn.jsdelivr.net/npm/@hugeicons/core-free-icons@4.2.3/dist/esm'
+
 const iconNameSet = new Set<string>(iconNames)
 
-type HugeiconsLoader = typeof import('@hugeicons/core-free-icons/loader')
-
-let loaderPromise: Promise<HugeiconsLoader> | null = null
-
-function getLoader() {
-  if (!loaderPromise) {
-    loaderPromise = import('@hugeicons/core-free-icons/loader')
-  }
-  return loaderPromise
+const featuredLoaders: Record<string, () => Promise<IconSvgElement>> = {
+  NoteEditIcon: () => import('@hugeicons/core-free-icons/NoteEditIcon').then((m) => m.default),
+  Notebook01Icon: () => import('@hugeicons/core-free-icons/Notebook01Icon').then((m) => m.default),
+  StickyNote01Icon: () => import('@hugeicons/core-free-icons/StickyNote01Icon').then((m) => m.default),
+  File02Icon: () => import('@hugeicons/core-free-icons/File02Icon').then((m) => m.default),
+  FileAddIcon: () => import('@hugeicons/core-free-icons/FileAddIcon').then((m) => m.default),
+  Folder03Icon: () => import('@hugeicons/core-free-icons/Folder03Icon').then((m) => m.default),
+  FolderOpenIcon: () => import('@hugeicons/core-free-icons/FolderOpenIcon').then((m) => m.default),
+  FolderAddIcon: () => import('@hugeicons/core-free-icons/FolderAddIcon').then((m) => m.default),
+  ArchiveIcon: () => import('@hugeicons/core-free-icons/ArchiveIcon').then((m) => m.default),
+  InboxIcon: () => import('@hugeicons/core-free-icons/InboxIcon').then((m) => m.default),
+  Pin02Icon: () => import('@hugeicons/core-free-icons/Pin02Icon').then((m) => m.default),
+  Bookmark01Icon: () => import('@hugeicons/core-free-icons/Bookmark01Icon').then((m) => m.default),
+  Tag01Icon: () => import('@hugeicons/core-free-icons/Tag01Icon').then((m) => m.default),
+  Flag01Icon: () => import('@hugeicons/core-free-icons/Flag01Icon').then((m) => m.default),
+  StarCircleIcon: () => import('@hugeicons/core-free-icons/StarCircleIcon').then((m) => m.default),
+  FavouriteIcon: () => import('@hugeicons/core-free-icons/FavouriteIcon').then((m) => m.default),
+  Idea01Icon: () => import('@hugeicons/core-free-icons/Idea01Icon').then((m) => m.default),
+  LightbulbOffIcon: () => import('@hugeicons/core-free-icons/LightbulbOffIcon').then((m) => m.default),
+  Brain01Icon: () => import('@hugeicons/core-free-icons/Brain01Icon').then((m) => m.default),
+  SparklesIcon: () => import('@hugeicons/core-free-icons/SparklesIcon').then((m) => m.default),
+  AiMagicIcon: () => import('@hugeicons/core-free-icons/AiMagicIcon').then((m) => m.default),
+  Target01Icon: () => import('@hugeicons/core-free-icons/Target01Icon').then((m) => m.default),
+  Tick02Icon: () => import('@hugeicons/core-free-icons/Tick02Icon').then((m) => m.default),
+  Task01Icon: () => import('@hugeicons/core-free-icons/Task01Icon').then((m) => m.default),
+  CheckListIcon: () => import('@hugeicons/core-free-icons/CheckListIcon').then((m) => m.default),
+  Calendar01Icon: () => import('@hugeicons/core-free-icons/Calendar01Icon').then((m) => m.default),
+  Clock01Icon: () => import('@hugeicons/core-free-icons/Clock01Icon').then((m) => m.default),
+  AlarmClockIcon: () => import('@hugeicons/core-free-icons/AlarmClockIcon').then((m) => m.default),
+  Timer01Icon: () => import('@hugeicons/core-free-icons/Timer01Icon').then((m) => m.default),
+  Rocket01Icon: () => import('@hugeicons/core-free-icons/Rocket01Icon').then((m) => m.default),
+  FireIcon: () => import('@hugeicons/core-free-icons/FireIcon').then((m) => m.default),
+  BoltIcon: () => import('@hugeicons/core-free-icons/BoltIcon').then((m) => m.default),
+  Activity01Icon: () => import('@hugeicons/core-free-icons/Activity01Icon').then((m) => m.default),
+  ChartIcon: () => import('@hugeicons/core-free-icons/ChartIcon').then((m) => m.default),
+  Analytics01Icon: () => import('@hugeicons/core-free-icons/Analytics01Icon').then((m) => m.default),
+  Presentation01Icon: () => import('@hugeicons/core-free-icons/Presentation01Icon').then((m) => m.default),
+  WhiteboardIcon: () => import('@hugeicons/core-free-icons/WhiteboardIcon').then((m) => m.default),
+  Flowchart01Icon: () => import('@hugeicons/core-free-icons/Flowchart01Icon').then((m) => m.default),
+  KanbanIcon: () => import('@hugeicons/core-free-icons/KanbanIcon').then((m) => m.default),
+  MymindIcon: () => import('@hugeicons/core-free-icons/MymindIcon').then((m) => m.default),
+  Layers01Icon: () => import('@hugeicons/core-free-icons/Layers01Icon').then((m) => m.default),
+  Table02Icon: () => import('@hugeicons/core-free-icons/Table02Icon').then((m) => m.default),
+  LayoutLeftIcon: () => import('@hugeicons/core-free-icons/LayoutLeftIcon').then((m) => m.default),
+  GridIcon: () => import('@hugeicons/core-free-icons/GridIcon').then((m) => m.default),
+  Briefcase01Icon: () => import('@hugeicons/core-free-icons/Briefcase01Icon').then((m) => m.default),
+  Building01Icon: () => import('@hugeicons/core-free-icons/Building01Icon').then((m) => m.default),
+  Store01Icon: () => import('@hugeicons/core-free-icons/Store01Icon').then((m) => m.default),
+  Factory01Icon: () => import('@hugeicons/core-free-icons/Factory01Icon').then((m) => m.default),
+  BankIcon: () => import('@hugeicons/core-free-icons/BankIcon').then((m) => m.default),
+  CreditCardIcon: () => import('@hugeicons/core-free-icons/CreditCardIcon').then((m) => m.default),
+  Wallet01Icon: () => import('@hugeicons/core-free-icons/Wallet01Icon').then((m) => m.default),
+  Money01Icon: () => import('@hugeicons/core-free-icons/Money01Icon').then((m) => m.default),
+  Invoice01Icon: () => import('@hugeicons/core-free-icons/Invoice01Icon').then((m) => m.default),
+  Home05Icon: () => import('@hugeicons/core-free-icons/Home05Icon').then((m) => m.default),
+  Building06Icon: () => import('@hugeicons/core-free-icons/Building06Icon').then((m) => m.default),
+  School01Icon: () => import('@hugeicons/core-free-icons/School01Icon').then((m) => m.default),
+  GraduationCapIcon: () => import('@hugeicons/core-free-icons/GraduationCapIcon').then((m) => m.default),
+  BookOpen01Icon: () => import('@hugeicons/core-free-icons/BookOpen01Icon').then((m) => m.default),
+  LibraryIcon: () => import('@hugeicons/core-free-icons/LibraryIcon').then((m) => m.default),
+  NewsIcon: () => import('@hugeicons/core-free-icons/NewsIcon').then((m) => m.default),
+  Mail01Icon: () => import('@hugeicons/core-free-icons/Mail01Icon').then((m) => m.default),
+  InboxDownloadIcon: () => import('@hugeicons/core-free-icons/InboxDownloadIcon').then((m) => m.default),
+  SentIcon: () => import('@hugeicons/core-free-icons/SentIcon').then((m) => m.default),
+  Message01Icon: () => import('@hugeicons/core-free-icons/Message01Icon').then((m) => m.default),
+  Chat01Icon: () => import('@hugeicons/core-free-icons/Chat01Icon').then((m) => m.default),
+  Comment01Icon: () => import('@hugeicons/core-free-icons/Comment01Icon').then((m) => m.default),
+  Megaphone01Icon: () => import('@hugeicons/core-free-icons/Megaphone01Icon').then((m) => m.default),
+  Mic01Icon: () => import('@hugeicons/core-free-icons/Mic01Icon').then((m) => m.default),
+  HeadphonesIcon: () => import('@hugeicons/core-free-icons/HeadphonesIcon').then((m) => m.default),
+  Video01Icon: () => import('@hugeicons/core-free-icons/Video01Icon').then((m) => m.default),
+  Camera01Icon: () => import('@hugeicons/core-free-icons/Camera01Icon').then((m) => m.default),
+  Image01Icon: () => import('@hugeicons/core-free-icons/Image01Icon').then((m) => m.default),
+  Film01Icon: () => import('@hugeicons/core-free-icons/Film01Icon').then((m) => m.default),
+  MusicNote01Icon: () => import('@hugeicons/core-free-icons/MusicNote01Icon').then((m) => m.default),
+  PaintBrush01Icon: () => import('@hugeicons/core-free-icons/PaintBrush01Icon').then((m) => m.default),
+  ColorsIcon: () => import('@hugeicons/core-free-icons/ColorsIcon').then((m) => m.default),
+  MagicWand01Icon: () => import('@hugeicons/core-free-icons/MagicWand01Icon').then((m) => m.default),
+  CodeIcon: () => import('@hugeicons/core-free-icons/CodeIcon').then((m) => m.default),
+  TerminalIcon: () => import('@hugeicons/core-free-icons/TerminalIcon').then((m) => m.default),
+  Database01Icon: () => import('@hugeicons/core-free-icons/Database01Icon').then((m) => m.default),
+  CloudServerIcon: () => import('@hugeicons/core-free-icons/CloudServerIcon').then((m) => m.default),
+  CloudIcon: () => import('@hugeicons/core-free-icons/CloudIcon').then((m) => m.default),
+  Wifi01Icon: () => import('@hugeicons/core-free-icons/Wifi01Icon').then((m) => m.default),
+  Globe02Icon: () => import('@hugeicons/core-free-icons/Globe02Icon').then((m) => m.default),
+  Compass01Icon: () => import('@hugeicons/core-free-icons/Compass01Icon').then((m) => m.default),
+  MapsIcon: () => import('@hugeicons/core-free-icons/MapsIcon').then((m) => m.default),
+  Location01Icon: () => import('@hugeicons/core-free-icons/Location01Icon').then((m) => m.default),
+  Airplane01Icon: () => import('@hugeicons/core-free-icons/Airplane01Icon').then((m) => m.default),
+  Car01Icon: () => import('@hugeicons/core-free-icons/Car01Icon').then((m) => m.default),
+  Bus01Icon: () => import('@hugeicons/core-free-icons/Bus01Icon').then((m) => m.default),
+  Train01Icon: () => import('@hugeicons/core-free-icons/Train01Icon').then((m) => m.default),
+  Bicycle01Icon: () => import('@hugeicons/core-free-icons/Bicycle01Icon').then((m) => m.default),
+  CargoShipIcon: () => import('@hugeicons/core-free-icons/CargoShipIcon').then((m) => m.default),
+  PackageIcon: () => import('@hugeicons/core-free-icons/PackageIcon').then((m) => m.default),
+  DeliveryBox01Icon: () => import('@hugeicons/core-free-icons/DeliveryBox01Icon').then((m) => m.default),
+  ShoppingBag01Icon: () => import('@hugeicons/core-free-icons/ShoppingBag01Icon').then((m) => m.default),
+  GiftIcon: () => import('@hugeicons/core-free-icons/GiftIcon').then((m) => m.default),
+  Coffee01Icon: () => import('@hugeicons/core-free-icons/Coffee01Icon').then((m) => m.default),
+  Pizza01Icon: () => import('@hugeicons/core-free-icons/Pizza01Icon').then((m) => m.default),
+  Restaurant01Icon: () => import('@hugeicons/core-free-icons/Restaurant01Icon').then((m) => m.default),
+  Plant01Icon: () => import('@hugeicons/core-free-icons/Plant01Icon').then((m) => m.default),
+  Tree01Icon: () => import('@hugeicons/core-free-icons/Tree01Icon').then((m) => m.default),
+  Sun01Icon: () => import('@hugeicons/core-free-icons/Sun01Icon').then((m) => m.default),
+  Moon01Icon: () => import('@hugeicons/core-free-icons/Moon01Icon').then((m) => m.default),
+  CloudRainIcon: () => import('@hugeicons/core-free-icons/CloudRainIcon').then((m) => m.default),
+  SnowIcon: () => import('@hugeicons/core-free-icons/SnowIcon').then((m) => m.default),
+  UserIcon: () => import('@hugeicons/core-free-icons/UserIcon').then((m) => m.default),
+  UserGroupIcon: () => import('@hugeicons/core-free-icons/UserGroupIcon').then((m) => m.default),
+  AddTeamIcon: () => import('@hugeicons/core-free-icons/AddTeamIcon').then((m) => m.default),
+  HandshakeIcon: () => import('@hugeicons/core-free-icons/HandshakeIcon').then((m) => m.default),
+  Link01Icon: () => import('@hugeicons/core-free-icons/Link01Icon').then((m) => m.default),
+  Attachment01Icon: () => import('@hugeicons/core-free-icons/Attachment01Icon').then((m) => m.default),
+  SearchVisualIcon: () => import('@hugeicons/core-free-icons/SearchVisualIcon').then((m) => m.default),
+  Settings01Icon: () => import('@hugeicons/core-free-icons/Settings01Icon').then((m) => m.default),
+  Wrench01Icon: () => import('@hugeicons/core-free-icons/Wrench01Icon').then((m) => m.default),
+  HammerIcon: () => import('@hugeicons/core-free-icons/HammerIcon').then((m) => m.default),
+  LockIcon: () => import('@hugeicons/core-free-icons/LockIcon').then((m) => m.default),
+  Shield01Icon: () => import('@hugeicons/core-free-icons/Shield01Icon').then((m) => m.default),
+  Key01Icon: () => import('@hugeicons/core-free-icons/Key01Icon').then((m) => m.default),
+  Legal01Icon: () => import('@hugeicons/core-free-icons/Legal01Icon').then((m) => m.default),
+  JusticeScale01Icon: () => import('@hugeicons/core-free-icons/JusticeScale01Icon').then((m) => m.default),
+  Hospital01Icon: () => import('@hugeicons/core-free-icons/Hospital01Icon').then((m) => m.default),
+  FirstAidKitIcon: () => import('@hugeicons/core-free-icons/FirstAidKitIcon').then((m) => m.default),
+  HeartCheckIcon: () => import('@hugeicons/core-free-icons/HeartCheckIcon').then((m) => m.default),
+  PillIcon: () => import('@hugeicons/core-free-icons/PillIcon').then((m) => m.default),
+  Dumbbell01Icon: () => import('@hugeicons/core-free-icons/Dumbbell01Icon').then((m) => m.default),
+  Yoga01Icon: () => import('@hugeicons/core-free-icons/Yoga01Icon').then((m) => m.default),
+  RunningShoesIcon: () => import('@hugeicons/core-free-icons/RunningShoesIcon').then((m) => m.default),
+  FootballIcon: () => import('@hugeicons/core-free-icons/FootballIcon').then((m) => m.default),
+  Basketball01Icon: () => import('@hugeicons/core-free-icons/Basketball01Icon').then((m) => m.default),
+  GameController01Icon: () => import('@hugeicons/core-free-icons/GameController01Icon').then((m) => m.default),
+  DiceIcon: () => import('@hugeicons/core-free-icons/DiceIcon').then((m) => m.default),
+  PuzzleIcon: () => import('@hugeicons/core-free-icons/PuzzleIcon').then((m) => m.default),
+  ChessPawnIcon: () => import('@hugeicons/core-free-icons/ChessPawnIcon').then((m) => m.default),
+  GhostIcon: () => import('@hugeicons/core-free-icons/GhostIcon').then((m) => m.default),
+  Alien01Icon: () => import('@hugeicons/core-free-icons/Alien01Icon').then((m) => m.default),
+  Robot01Icon: () => import('@hugeicons/core-free-icons/Robot01Icon').then((m) => m.default),
+  Satellite01Icon: () => import('@hugeicons/core-free-icons/Satellite01Icon').then((m) => m.default),
+  Telescope01Icon: () => import('@hugeicons/core-free-icons/Telescope01Icon').then((m) => m.default),
+  MicroscopeIcon: () => import('@hugeicons/core-free-icons/MicroscopeIcon').then((m) => m.default),
+  Dna01Icon: () => import('@hugeicons/core-free-icons/Dna01Icon').then((m) => m.default),
+  Atom01Icon: () => import('@hugeicons/core-free-icons/Atom01Icon').then((m) => m.default),
+  CalculatorIcon: () => import('@hugeicons/core-free-icons/CalculatorIcon').then((m) => m.default),
+  AbacusIcon: () => import('@hugeicons/core-free-icons/AbacusIcon').then((m) => m.default),
+  Bitcoin01Icon: () => import('@hugeicons/core-free-icons/Bitcoin01Icon').then((m) => m.default),
+  Bug01Icon: () => import('@hugeicons/core-free-icons/Bug01Icon').then((m) => m.default),
+  PencilIcon: () => import('@hugeicons/core-free-icons/PencilIcon').then((m) => m.default),
 }
 
 export function iconExists(iconName: string): boolean {
@@ -21,16 +162,17 @@ export function iconExists(iconName: string): boolean {
 
 const cache = new Map<string, Promise<IconSvgElement>>()
 
+async function loadFromCdn(iconName: string): Promise<IconSvgElement> {
+  const module = await import(/* @vite-ignore */ `${ICON_CDN_BASE}/${iconName}.js`)
+  return module.default as IconSvgElement
+}
+
 export async function loadIcon(iconName: string): Promise<IconSvgElement> {
   const cached = cache.get(iconName)
   if (cached) return cached
 
-  const promise = getLoader().then(async ({ loadIcon: loadHugeIcon, iconExists: hugeIconExists }) => {
-    if (!hugeIconExists(iconName)) {
-      throw new Error(`Unknown icon: ${iconName}`)
-    }
-    return (await loadHugeIcon(iconName)) as IconSvgElement
-  })
+  const featured = featuredLoaders[iconName]
+  const promise = featured ? featured() : loadFromCdn(iconName)
 
   cache.set(iconName, promise)
   return promise

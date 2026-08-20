@@ -22,4 +22,5 @@ fi
 
 echo "[web] Building with VITE_API_URL=${API_URL}"
 export VITE_API_URL="$API_URL"
+node scripts/generate-page-icon-loader.mjs
 exec bun run build
