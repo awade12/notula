@@ -3,6 +3,7 @@ WORKDIR /app
 
 ARG HUGEICONS_LICENSE_KEY=""
 ENV HUGEICONS_LICENSE_KEY=$HUGEICONS_LICENSE_KEY
+ENV NODE_ENV=development
 
 COPY package.json bun.lock .npmrc ./
 COPY apps/server/package.json apps/server/
@@ -18,13 +19,14 @@ WORKDIR /app
 ARG VITE_API_URL="http://server:3001"
 ENV VITE_API_URL=$VITE_API_URL
 ENV NODE_OPTIONS="--max-old-space-size=8192"
+ENV NODE_ENV=development
 
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 COPY tooling tooling
 
 WORKDIR /app/apps/web
-RUN set -ex && bun --version && bun run build
+RUN bun --version && bunx vite build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/apps/web
