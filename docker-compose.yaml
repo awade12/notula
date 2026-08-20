@@ -51,14 +51,17 @@ services:
     restart: unless-stopped
     environment:
       SERVICE_FQDN_SERVER_3001: ''
+      SERVICE_URL_SERVER: ${SERVICE_URL_SERVER:-}
+      SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
+      SERVICE_FQDN_WEB_3000: ${SERVICE_FQDN_WEB_3000:-}
       PGHOST: postgres
       PGPORT: '5432'
       PGUSER: ${POSTGRES_USER:-notula}
       PGPASSWORD: ${SERVICE_PASSWORD_POSTGRES:-${POSTGRES_PASSWORD}}
       PGDATABASE: ${POSTGRES_DB:-notula}
       BETTER_AUTH_SECRET: ${SERVICE_REALBASE64_AUTH:-${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET or deploy on Coolify}}
-      BETTER_AUTH_URL: ${SERVICE_URL_SERVER:-${BETTER_AUTH_URL:?Set BETTER_AUTH_URL or deploy on Coolify}}
-      WEB_ORIGIN: ${SERVICE_URL_WEB:-${WEB_ORIGIN:?Set WEB_ORIGIN or deploy on Coolify}}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-${SERVICE_URL_SERVER:-}}
+      WEB_ORIGIN: ${WEB_ORIGIN:-${SERVICE_URL_WEB:-}}
       PORT: '3001'
       RUN_MIGRATIONS: 'false'
     depends_on:
@@ -69,11 +72,11 @@ services:
     expose:
       - '3001'
     healthcheck:
-      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+      test: ['CMD-SHELL', 'bun -e "fetch(\"http://127.0.0.1:3001/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   web:
     build:

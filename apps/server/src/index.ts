@@ -105,8 +105,8 @@ httpServer.on('upgrade', (request, socket, head) => {
   socket.destroy()
 })
 
-httpServer.listen(env.PORT, () => {
-  console.log(`Server listening on http://localhost:${env.PORT}`)
+httpServer.listen(env.PORT, '0.0.0.0', () => {
+  console.log(`Server listening on http://0.0.0.0:${env.PORT}`)
 })
 
 export type AppType = typeof app
