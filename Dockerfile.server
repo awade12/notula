@@ -3,6 +3,7 @@ WORKDIR /app
 
 ARG HUGEICONS_LICENSE_KEY=""
 ENV HUGEICONS_LICENSE_KEY=$HUGEICONS_LICENSE_KEY
+ENV NODE_ENV=development
 
 COPY package.json bun.lock .npmrc ./
 COPY apps/server/package.json apps/server/
@@ -23,7 +24,7 @@ COPY apps/server apps/server
 COPY tooling tooling
 COPY package.json bun.lock .npmrc ./
 
-RUN chmod +x apps/server/docker-entrypoint.sh
+RUN chmod +x apps/server/docker-entrypoint.sh apps/server/docker-migrate.sh
 
 WORKDIR /app/apps/server
 EXPOSE 3001
