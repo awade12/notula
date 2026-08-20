@@ -1,0 +1,97 @@
+# Notula production stack for Coolify (or any Docker host).
+#
+# Coolify:
+#   1. New Resource → Docker Compose → point at this file
+#   2. Set env vars from .env.production.example
+#   3. Assign domains:
+#        web     → https://notula.dev
+#        server  → https://api.notula.dev  (enable WebSockets in Coolify)
+#   4. Build args: HUGEICONS_LICENSE_KEY, VITE_API_URL=https://api.notula.dev
+#
+# Using external Postgres (Neon)? Remove the postgres service and set DATABASE_URL.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-notula}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-notula}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-notula} -d ${POSTGRES_DB:-notula}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+      args:
+        HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
+    restart: 'no'
+    entrypoint: ['sh', '-c']
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-notula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-notula}}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ['cd /app/apps/server && bun run db:migrate && (bun run db:migrate:pgvector || true)']
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+      args:
+        HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-notula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-notula}}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set BETTER_AUTH_URL e.g. https://api.notula.dev}
+      WEB_ORIGIN: ${WEB_ORIGIN:?Set WEB_ORIGIN e.g. https://notula.dev}
+      PORT: 3001
+      RUN_MIGRATIONS: 'false'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    expose:
+      - '3001'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
+        VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL e.g. https://api.notula.dev}
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+    depends_on:
+      server:
+        condition: service_healthy
+    expose:
+      - '3000'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:

@@ -1,0 +1,1 @@
+ALTER TABLE "page_insights" ADD COLUMN "due_date" text DEFAULT '' NOT NULL;

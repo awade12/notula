@@ -1,0 +1,10 @@
+node_modules
+dist
+.output
+.env
+.env.local
+*.log
+.DS_Store
+.turbo
+coverage
+apps/server/src/db/migrations/meta

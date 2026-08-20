@@ -1,0 +1,17 @@
+# Optional local Postgres — skip if you use Neon (see apps/server/.env.example).
+# Requires Docker Desktop (~GB of disk). Not needed for normal dev with a cloud DATABASE_URL.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: notesapp
+      POSTGRES_PASSWORD: notesapp
+      POSTGRES_DB: notesapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

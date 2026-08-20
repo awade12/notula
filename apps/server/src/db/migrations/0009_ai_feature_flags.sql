@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "ai_feature_flags" jsonb DEFAULT '{"turnInto":true,"continueWriting":true,"rewriteSelection":true,"slashCommands":true,"stalePageDetector":true,"meetingPrep":true,"duplicateDetection":true,"inlineGhostCompletion":false}'::jsonb NOT NULL;

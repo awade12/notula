@@ -1,0 +1,27 @@
+import type { AppearancePreferences } from '../types'
+
+export const DEFAULT_APPEARANCE: AppearancePreferences = {
+  theme: 'dark',
+  uiFont: 'inter',
+  uiScale: 'md',
+  editorFont: 'match-ui',
+  editorFontSize: 16,
+  editorLineHeight: 'normal',
+  editorWidth: 'default',
+  editorAlignment: 'center',
+  blockSpacing: 'normal',
+  accentColor: 'neutral',
+  letterSpacing: 'normal',
+  spellCheck: true,
+  showPageIcons: true,
+  showConnectionBanner: true,
+  compactSidebar: false,
+  sidebarStartCollapsed: false,
+  showBlockHover: true,
+  showSideMenu: true,
+  linkUnderline: 'hover',
+  confirmBeforeDelete: true,
+  openLinksInNewTab: true,
+  reducedMotion: 'system',
+  monospaceCodeBlocks: true,
+}

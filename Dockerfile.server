@@ -1,0 +1,34 @@
+FROM oven/bun:1.3-alpine AS deps
+WORKDIR /app
+
+ARG HUGEICONS_LICENSE_KEY=""
+ENV HUGEICONS_LICENSE_KEY=$HUGEICONS_LICENSE_KEY
+
+COPY package.json bun.lock .npmrc ./
+COPY apps/server/package.json apps/server/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+COPY tooling/tsconfig tooling/tsconfig/
+
+RUN bun install --frozen-lockfile
+RUN bun add tsx
+
+FROM deps AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY packages/shared packages/shared
+COPY apps/server apps/server
+COPY tooling tooling
+COPY package.json bun.lock .npmrc ./
+
+RUN chmod +x apps/server/docker-entrypoint.sh
+
+WORKDIR /app/apps/server
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+ENTRYPOINT ["/app/apps/server/docker-entrypoint.sh"]

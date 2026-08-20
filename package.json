@@ -1,0 +1,27 @@
+{
+  "name": "notesapp",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.10",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": ["apps/*", "packages/*", "tooling/*"],
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "predev": "node scripts/prepare-dev.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "node scripts/run-workspace.mjs @notesapp/web dev",
+    "dev:server": "node scripts/run-workspace.mjs @notesapp/server dev",
+    "build": "node scripts/run-workspace.mjs @notesapp/shared build && node scripts/run-workspace.mjs @notesapp/server build && node scripts/run-workspace.mjs @notesapp/web build",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
+    "db:prod:down": "docker compose -f docker-compose.prod.yml down",
+    "db:migrate": "node scripts/run-workspace.mjs @notesapp/server db:migrate",
+    "db:migrate:pgvector": "node scripts/run-workspace.mjs @notesapp/server db:migrate:pgvector",
+    "lint": "node scripts/run-workspace.mjs @notesapp/shared lint && node scripts/run-workspace.mjs @notesapp/server lint && node scripts/run-workspace.mjs @notesapp/web lint",
+    "typecheck": "node scripts/run-workspace.mjs @notesapp/shared typecheck && node scripts/run-workspace.mjs @notesapp/server typecheck && node scripts/run-workspace.mjs @notesapp/web typecheck",
+    "test": "node scripts/run-workspace.mjs @notesapp/shared test && node scripts/run-workspace.mjs @notesapp/server test && node scripts/run-workspace.mjs @notesapp/web test"
+  }
+}
