@@ -19,7 +19,7 @@ const config = defineConfig({
     sourcemap: false,
   },
   ssr: {
-    noExternal: [/@tanstack\//, 'react', 'react-dom'],
+    noExternal: [/@tanstack\//, 'react', 'react-dom', 'framer-motion'],
   },
   resolve: {
     alias: existsSync(proIconPack)

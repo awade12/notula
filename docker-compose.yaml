@@ -5,7 +5,9 @@
 #   web    → https://notes.bluevistastudio.com:3000
 #   server → https://api.bluevistastudio.com:3001
 # The :3000 / :3001 suffix is required for Traefik routing (not shown in the browser URL).
-# After changing domains, redeploy with clear build cache.
+# Optional override when web + API are on sibling subdomains:
+#   AUTH_COOKIE_DOMAIN=.bluevistastudio.com
+# Auto-detected from WEB_ORIGIN + BETTER_AUTH_URL when both share a parent domain.
 #
 # Coolify bug: SERVICE_URL_* may stay on the old sslip.io URL after you set custom
 # domains. This stack prefers SERVICE_FQDN_* (correct) for runtime + web build.
@@ -63,6 +65,7 @@ services:
       SERVICE_URL_WEB: ${SERVICE_URL_WEB:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
       WEB_ORIGIN: ${WEB_ORIGIN:-}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
       PGHOST: postgres
       PGPORT: '5432'
       PGUSER: ${POSTGRES_USER:-notula}

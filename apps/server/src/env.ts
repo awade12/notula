@@ -21,7 +21,7 @@ function normalizePublicUrl(raw: string): string {
   } else if (!/^https?:\/\//i.test(value)) {
     value = `https://${value}`
   }
-  return value
+  return value.replace(/\/$/, '')
 }
 
 function fqdnToPublicUrl(fqdn: string): string {

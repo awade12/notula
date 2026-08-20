@@ -13,6 +13,7 @@ import {
   type SessionVariables,
 } from './middleware/session'
 import { createAuth } from './modules/auth/config'
+import { resolveSharedCookieDomain } from './lib/cookie-domain'
 import { createAuthRoutes } from './modules/auth/routes'
 import { createPagesRoutes } from './modules/pages/routes'
 import { createSearchRoutes } from './modules/search/routes'
@@ -29,6 +30,7 @@ import { createPublicBoardsRoutes } from './modules/public-boards/routes'
 const env = loadEnv()
 const db = createDb(env)
 const auth = createAuth(db, env)
+const cookieDomain = resolveSharedCookieDomain(env.WEB_ORIGIN, env.BETTER_AUTH_URL)
 const collab = createCollabServer({ auth, db, authSecret: env.BETTER_AUTH_SECRET })
 
 const app = new Hono<{ Variables: SessionVariables }>()
@@ -107,6 +109,7 @@ httpServer.on('upgrade', (request, socket, head) => {
 
 httpServer.listen(env.PORT, '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${env.PORT}`)
+  console.log(`Auth cookie domain: ${cookieDomain ?? '(host-only)'}`)
 })
 
 export type AppType = typeof app
