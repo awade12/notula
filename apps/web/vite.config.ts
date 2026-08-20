@@ -18,6 +18,14 @@ const config = defineConfig({
   build: {
     sourcemap: false,
   },
+  ssr: {
+    noExternal: [
+      '@tanstack/react-start',
+      '@tanstack/react-router',
+      '@tanstack/react-start-client',
+      '@tanstack/start-client-core',
+    ],
+  },
   resolve: {
     alias: existsSync(proIconPack)
       ? {}
