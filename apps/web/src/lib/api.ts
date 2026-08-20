@@ -1,6 +1,8 @@
 import { resolveClientApiUrl } from '@/lib/resolve-api-url'
 
-export const apiUrl = resolveClientApiUrl()
+export function getApiUrl() {
+  return resolveClientApiUrl()
+}
 
 export async function apiFetch(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers)
@@ -8,7 +10,7 @@ export async function apiFetch(path: string, init?: RequestInit) {
     headers.set('Content-Type', 'application/json')
   }
 
-  return fetch(`${apiUrl}${path}`, {
+  return fetch(`${getApiUrl()}${path}`, {
     ...init,
     credentials: 'include',
     headers,

@@ -9,6 +9,18 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url))
 const clientDir = join(rootDir, 'dist/client')
 const port = Number(process.env.PORT ?? 3000)
 const host = process.env.HOST ?? '0.0.0.0'
+const apiProxyTarget = (process.env.API_PROXY_URL ?? 'http://server:3001').replace(/\/$/, '')
+
+const hopByHopHeaders = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+])
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -83,6 +95,55 @@ async function toWebRequest(req) {
   return new Request(url, init)
 }
 
+function buildProxyHeaders(req) {
+  const headers = new Headers()
+
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (!value) continue
+    const lower = key.toLowerCase()
+    if (lower === 'host' || hopByHopHeaders.has(lower)) continue
+    if (Array.isArray(value)) {
+      for (const entry of value) headers.append(key, entry)
+      continue
+    }
+    headers.set(key, value)
+  }
+
+  return headers
+}
+
+async function tryProxyApi(req, res) {
+  const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+  if (!url.pathname.startsWith('/api')) return false
+
+  const targetUrl = `${apiProxyTarget}${url.pathname}${url.search}`
+  const init = {
+    method: req.method,
+    headers: buildProxyHeaders(req),
+  }
+
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    init.body = req
+    init.duplex = 'half'
+  }
+
+  const response = await fetch(targetUrl, init)
+
+  res.statusCode = response.status
+  response.headers.forEach((value, key) => {
+    if (hopByHopHeaders.has(key.toLowerCase())) return
+    res.setHeader(key, value)
+  })
+
+  if (!response.body) {
+    res.end()
+    return true
+  }
+
+  Readable.fromWeb(response.body).pipe(res)
+  return true
+}
+
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
@@ -95,6 +156,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (tryServeStatic(url.pathname, req, res)) return
+    if (await tryProxyApi(req, res)) return
 
     const response = await handler.fetch(await toWebRequest(req))
 
@@ -108,4 +170,5 @@ const server = createServer(async (req, res) => {
 
 server.listen(port, host, () => {
   console.log(`Web listening on http://${host}:${port}`)
+  console.log(`API proxy target: ${apiProxyTarget}`)
 })

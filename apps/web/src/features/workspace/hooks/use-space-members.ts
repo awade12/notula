@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { acceptSpaceInvite } from '@/features/workspace/lib/accept-space-invite'
-import { apiFetch, apiUrl } from '@/lib/api'
+import { apiFetch } from '@/lib/api'
 
 export type SpaceMember = {
   id: string
@@ -106,7 +106,7 @@ export function useMemberActions(spaceId: string) {
 
 export function buildInviteUrl(token: string) {
   if (typeof window === 'undefined') {
-    return `${apiUrl.replace(/:\d+$/, ':3000')}/invite/${token}`
+    return `/invite/${token}`
   }
   return `${window.location.origin}/invite/${token}`
 }

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { apiUrl } from '@/lib/api'
+import { getApiUrl } from '@/lib/api'
 import type { TaskAiAgentResponse, TaskAiMember, TaskAiMessage, TaskAiProperty } from '../lib/task-ai-types'
 
 type SendMessageInput = {
@@ -53,7 +53,7 @@ export function useTaskAiAgent() {
     })
 
     try {
-      const response = await fetch(`${apiUrl}/api/ai/task-agent`, {
+      const response = await fetch(`${getApiUrl()}/api/ai/task-agent`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

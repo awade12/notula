@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/api'
+import { getApiUrl } from '@/lib/api'
 import type { AiCompletionRequest } from '../types'
 
 function parseSseChunk(raw: string) {
@@ -29,7 +29,7 @@ export async function streamAiCompletion(
   onChunk: (chunk: string, fullText: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
-  const response = await fetch(`${apiUrl}/api/ai/complete`, {
+  const response = await fetch(`${getApiUrl()}/api/ai/complete`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

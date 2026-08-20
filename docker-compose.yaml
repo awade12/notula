@@ -99,6 +99,7 @@ services:
         SERVICE_FQDN_SERVER: ${SERVICE_FQDN_SERVER:-}
     restart: unless-stopped
     environment:
+      API_PROXY_URL: http://server:3001
       SERVICE_FQDN_WEB_3000: ${SERVICE_FQDN_WEB_3000:-}
       SERVICE_FQDN_WEB: ${SERVICE_FQDN_WEB:-}
       SERVICE_FQDN_SERVER_3001: ${SERVICE_FQDN_SERVER_3001:-}

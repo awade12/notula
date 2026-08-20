@@ -58,6 +58,10 @@ export function resolveApiUrlFromEnv(
 }
 
 export function resolveClientApiUrl(fallbackOrigin?: string): string {
+  if (typeof window !== 'undefined') {
+    return ''
+  }
+
   const viteEnv = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL : undefined
   return resolveApiUrlFromEnv({ VITE_API_URL: viteEnv }, fallbackOrigin)
 }

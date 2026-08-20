@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { apiUrl } from '@/lib/api'
+import { getApiUrl } from '@/lib/api'
 import type { AiCompletionRequest } from '../types'
 
 function parseSseChunk(raw: string) {
@@ -53,7 +53,7 @@ export function useAiCompletion() {
     abortRef.current = controller
 
     try {
-      const response = await fetch(`${apiUrl}/api/ai/complete`, {
+      const response = await fetch(`${getApiUrl()}/api/ai/complete`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
