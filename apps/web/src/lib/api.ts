@@ -1,11 +1,6 @@
-function resolveApiUrl() {
-  const configured = import.meta.env.VITE_API_URL
-  if (configured) return configured.replace(/\/$/, '')
-  if (typeof window !== 'undefined') return window.location.origin
-  return 'http://localhost:3000'
-}
+import { resolveClientApiUrl } from '@/lib/resolve-api-url'
 
-export const apiUrl = resolveApiUrl()
+export const apiUrl = resolveClientApiUrl()
 
 export async function apiFetch(path: string, init?: RequestInit) {
   return fetch(`${apiUrl}${path}`, {

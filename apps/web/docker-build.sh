@@ -1,7 +1,14 @@
 #!/bin/sh
 set -eu
 
-if [ -n "${VITE_API_URL:-}" ]; then
+is_http_url() {
+  case "$1" in
+    http://*|https://*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [ -n "${VITE_API_URL:-}" ] && is_http_url "$VITE_API_URL"; then
   API_URL="$VITE_API_URL"
 elif [ -n "${SERVICE_FQDN_SERVER_3001:-}" ]; then
   HOST="${SERVICE_FQDN_SERVER_3001%%:*}"

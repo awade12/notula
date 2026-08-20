@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
+import { resolveServerApiUrl } from '@/lib/resolve-api-url'
 
 export type BootstrapSession = {
   user: {
@@ -10,10 +11,8 @@ export type BootstrapSession = {
   } | null
 }
 
-function getServerApiUrl(request: Request) {
-  const configured = process.env.VITE_API_URL
-  if (configured) return configured.replace(/\/$/, '')
-  return new URL(request.url).origin
+function getServerApiUrl() {
+  return resolveServerApiUrl()
 }
 
 export const getBootstrapSession = createServerFn({ method: 'GET' }).handler(
@@ -21,7 +20,7 @@ export const getBootstrapSession = createServerFn({ method: 'GET' }).handler(
     const request = getRequest()
     const cookie = request.headers.get('cookie') ?? ''
 
-    const response = await fetch(`${getServerApiUrl(request)}/api/me`, {
+    const response = await fetch(`${getServerApiUrl()}/api/me`, {
       headers: { cookie },
     })
 
