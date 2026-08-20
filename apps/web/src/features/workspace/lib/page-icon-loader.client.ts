@@ -4,33 +4,34 @@ import iconNames from '@/features/workspace/lib/page-icon-search-index.json'
 
 const iconNameSet = new Set<string>(iconNames)
 
-const iconModules = import.meta.glob('@hugeicons/core-free-icons/*Icon', {
-  import: 'default',
-}) as Record<string, () => Promise<IconSvgElement>>
+type HugeiconsLoader = typeof import('@hugeicons/core-free-icons/loader')
 
-const loadersByIconName = new Map<string, () => Promise<IconSvgElement>>()
+let loaderPromise: Promise<HugeiconsLoader> | null = null
 
-for (const [modulePath, loader] of Object.entries(iconModules)) {
-  const iconName = modulePath.slice(modulePath.lastIndexOf('/') + 1).replace(/\.js$/, '')
-  loadersByIconName.set(iconName, loader)
+function getLoader() {
+  if (!loaderPromise) {
+    loaderPromise = import('@hugeicons/core-free-icons/loader')
+  }
+  return loaderPromise
 }
 
 export function iconExists(iconName: string): boolean {
-  return iconNameSet.has(iconName) && loadersByIconName.has(iconName)
+  return iconNameSet.has(iconName)
 }
 
 const cache = new Map<string, Promise<IconSvgElement>>()
 
-export function loadIcon(iconName: string): Promise<IconSvgElement> {
+export async function loadIcon(iconName: string): Promise<IconSvgElement> {
   const cached = cache.get(iconName)
   if (cached) return cached
 
-  const loader = loadersByIconName.get(iconName)
-  if (!loader) {
-    return Promise.reject(new Error(`Unknown icon: ${iconName}`))
-  }
+  const promise = getLoader().then(async ({ loadIcon: loadHugeIcon, iconExists: hugeIconExists }) => {
+    if (!hugeIconExists(iconName)) {
+      throw new Error(`Unknown icon: ${iconName}`)
+    }
+    return (await loadHugeIcon(iconName)) as IconSvgElement
+  })
 
-  const promise = loader()
   cache.set(iconName, promise)
   return promise
 }
