@@ -1,0 +1,62 @@
+---
+description: Typography, color, and icon standards for dashboard UI
+globs: apps/web/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Dashboard Design System
+
+Simple systems make support dashboards feel effortless. Keep UI minimal, consistent, and scannable.
+
+## Typography
+
+- **Font**: Inter — `font-normal` (400) for body, `font-medium` (500) for emphasis and labels
+- **Letter spacing**: `-0.15px` on all text (`tracking-[-0.15px]`)
+- **Allowed sizes only**: `12px`, `13px`, `14px`, `24px` — no other font sizes in dashboard UI
+
+| Context | Size | Weight |
+|---------|------|--------|
+| Sidebar | 12px | regular / medium |
+| Main screen | 14px | regular / medium |
+| Page titles / primary headings | 24px | medium |
+| Secondary labels, metadata | 13px | regular |
+
+Build hierarchy with size and weight — not extra colors or decoration.
+
+## Color
+
+Use only these three text/surface tokens:
+
+| Token | Hex | Use |
+|-------|-----|-----|
+| Primary text | `#181818` | Body copy, default labels |
+| Emphasis | `#141414` | Headings, active nav, strong hierarchy |
+| On dark / inverse | `#FFFFFF` | Text on dark surfaces |
+
+```tsx
+// ✅ GOOD
+<p className="text-sm text-[#181818] tracking-[-0.15px]">Status</p>
+<h1 className="text-2xl font-medium text-[#141414] tracking-[-0.15px]">Overview</h1>
+
+// ❌ BAD — arbitrary size or gray scale
+<p className="text-[11px] text-gray-500">Status</p>
+```
+
+Extend `tailwind.config.ts` with named tokens (`text-primary`, `text-emphasis`) instead of repeating hex values once the config exists.
+
+## Icons
+
+- **Size**: `26px` (`size-[26px]` or `h-[26px] w-[26px]`) everywhere — sidebar nav and main screen actions
+- Keep stroke weight consistent; do not mix 16px, 20px, or 32px icons in dashboard surfaces
+
+## Layout rhythm
+
+- Sidebar content uses **12px** type; main content area uses **14px** type
+- Do not shrink sidebar copy below 12px or inflate main body above 14px except 24px headings
+
+## Never do
+
+- Add font sizes outside 12 / 13 / 14 / 24
+- Use gray-* Tailwind defaults instead of `#181818` / `#141414`
+- Size icons differently in sidebar vs main screen
+- Stack competing visual cues (color + bold + underline) — pick one hierarchy signal

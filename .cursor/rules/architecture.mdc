@@ -1,0 +1,601 @@
+---
+description: Core architecture, folder structure, file size limits, and styling conventions. Read before creating any file.
+globs: ["**/*.ts", "**/*.tsx", "**/*.css"]
+alwaysApply: true
+---
+
+# Architecture rules
+
+## Stack
+
+- **Frontend**: TanStack Start (React, SSR + SPA hybrid). TanStack Router for file-based routing. TanStack Query for server state. TanStack Table for grids. BlockNote for the editor.
+- **Server**: Hono + Hocuspocus in a single Node process (`apps/server`). Drizzle ORM. Better Auth.
+- **Database**: Postgres (JSONB for properties, tsvector for search, pgvector for embeddings).
+- **Realtime**: Yjs. Hocuspocus mounted on the same HTTP server as the API.
+- **AI**: Openrouter for AI completions.
+- **Authentication**: Better Auth (email/password).
+- **Styling**: Tailwind + shadcn/ui.
+- **Package manager**: Bun. **Runtime**: Node (Hocuspocus's `ws` dependency is unreliable under Bun).
+
+TanStack Start owns the web app shell and SSR. Hono owns the API, auth, database, and collab. Do not duplicate business logic in Start server functions — use them only for SSR bootstrap (session, redirects, initial loader data that wraps the Hono client).
+
+---
+
+## File size — hard limit 500 lines
+
+**500 lines is the ceiling, not the target.** A file crossing 300 lines is already a signal that it holds more than one responsibility.
+
+When a file approaches the limit, do NOT ask permission and do NOT keep appending. Split it, in this order of preference:
+
+1. **Extract a sub-component into a sibling file** in the same `components/` folder.
+2. **Extract logic into a hook** in the feature's `hooks/` folder.
+3. **Extract pure functions into `lib/`** within the feature.
+4. **Promote to a subfolder** when three or more related files accumulate — e.g. three toolbar files become `components/toolbar/`.
+
+The only files permitted past 500 lines:
+
+- Generated files (`routeTree.gen.ts`, Drizzle migration SQL, shadcn primitives copied in verbatim).
+- Nothing else. Registries, type maps, and config objects that feel "unavoidably long" are exactly the things that should become a folder of one-file-per-entry.
+
+**Never** split a file by arbitrary line count (`editor-part-1.tsx`, `editor-part-2.tsx`). Split along a responsibility seam. If no seam exists, the design is wrong — restructure instead.
+
+---
+
+## Folder structure principles
+
+**Feature-sliced, not layer-sliced.** There is no top-level `components/`, `hooks/`, or `utils/` outside a feature. Everything belonging to one feature lives under that feature, including its own `components/`, `hooks/`, `lib/`, `stores/`, and `types.ts`.
+
+**Colocate until it hurts.** Code shared by exactly two features stays in the feature that owns it and is imported across. Only promote to `packages/shared` when three or more consumers exist, or when both the client and server need it.
+
+**Folders go deep, files stay small.** Prefer `features/database/components/views/table/cells/select-cell.tsx` over a flat `components/` folder with 40 entries. Nesting is free; scrolling is not.
+
+**No barrel files inside features.** No `index.ts` re-exporting a folder's contents — they break Vite tree-shaking and cause circular imports in a monorepo. Import from the real path.
+
+**One export per file** for components. A file named `slash-menu-item.tsx` exports `SlashMenuItem` and nothing else. Small helper types used only by that component may live alongside it.
+
+---
+
+## Tree
+
+```
+notesapp/
+├── apps/
+│   ├── web/                                   # TanStack Start
+│   │   ├── src/
+│   │   │   ├── routes/                        # Thin — layout, loaders, SSR only
+│   │   │   │   ├── __root.tsx
+│   │   │   │   ├── router.tsx
+│   │   │   │   ├── routeTree.gen.ts           # generated
+│   │   │   │   ├── _auth/
+│   │   │   │   │   ├── login.tsx
+│   │   │   │   │   └── invite.$token.tsx
+│   │   │   │   └── _app/
+│   │   │   │       ├── route.tsx
+│   │   │   │       ├── index.tsx
+│   │   │   │       └── s.$spaceId/
+│   │   │   │           ├── route.tsx
+│   │   │   │           ├── p.$pageId.tsx      # ssr: false — editor is client-only
+│   │   │   │           ├── db.$databaseId.tsx
+│   │   │   │           └── settings/
+│   │   │   │               ├── members.tsx
+│   │   │   │               ├── ai.tsx
+│   │   │   │               └── integrations.tsx
+│   │   │   │
+│   │   │   ├── features/
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── login-form.tsx
+│   │   │   │   │   │   ├── signup-form.tsx
+│   │   │   │   │   │   └── invite-accept-card.tsx
+│   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── use-session.ts
+│   │   │   │   │   │   └── use-require-auth.ts
+│   │   │   │   │   └── lib/
+│   │   │   │   │       └── auth-client.ts
+│   │   │   │   │
+│   │   │   │   ├── workspace/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── sidebar/
+│   │   │   │   │   │   │   ├── sidebar.tsx
+│   │   │   │   │   │   │   ├── sidebar-header.tsx
+│   │   │   │   │   │   │   ├── sidebar-footer.tsx
+│   │   │   │   │   │   │   └── space-switcher.tsx
+│   │   │   │   │   │   ├── page-tree/
+│   │   │   │   │   │   │   ├── page-tree.tsx
+│   │   │   │   │   │   │   ├── page-tree-node.tsx
+│   │   │   │   │   │   │   ├── page-tree-item-menu.tsx
+│   │   │   │   │   │   │   ├── drop-indicator.tsx
+│   │   │   │   │   │   │   └── new-page-button.tsx
+│   │   │   │   │   │   ├── breadcrumbs.tsx
+│   │   │   │   │   │   └── page-icon-picker.tsx
+│   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── use-page-tree.ts
+│   │   │   │   │   │   ├── use-move-page.ts
+│   │   │   │   │   │   └── use-expanded-nodes.ts
+│   │   │   │   │   ├── lib/
+│   │   │   │   │   │   ├── build-tree.ts
+│   │   │   │   │   │   └── drop-target.ts
+│   │   │   │   │   ├── stores/
+│   │   │   │   │   │   └── sidebar-store.ts
+│   │   │   │   │   └── types.ts
+│   │   │   │   │
+│   │   │   │   ├── editor/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── editor-shell.tsx
+│   │   │   │   │   │   ├── editor-surface.tsx
+│   │   │   │   │   │   ├── page-title-input.tsx
+│   │   │   │   │   │   ├── toolbar/
+│   │   │   │   │   │   │   ├── selection-toolbar.tsx
+│   │   │   │   │   │   │   ├── format-group.tsx
+│   │   │   │   │   │   │   ├── link-popover.tsx
+│   │   │   │   │   │   │   └── ai-actions-button.tsx
+│   │   │   │   │   │   ├── slash-menu/
+│   │   │   │   │   │   │   ├── slash-menu.tsx
+│   │   │   │   │   │   │   ├── slash-menu-item.tsx
+│   │   │   │   │   │   │   └── slash-menu-groups.ts
+│   │   │   │   │   │   ├── mentions/
+│   │   │   │   │   │   │   ├── mention-node.tsx
+│   │   │   │   │   │   │   ├── mention-suggest.tsx
+│   │   │   │   │   │   │   └── mention-result-row.tsx
+│   │   │   │   │   │   ├── presence/
+│   │   │   │   │   │   │   ├── cursor-overlay.tsx
+│   │   │   │   │   │   │   ├── remote-caret.tsx
+│   │   │   │   │   │   │   └── avatar-stack.tsx
+│   │   │   │   │   │   └── blocks/
+│   │   │   │   │   │       ├── callout-block.tsx
+│   │   │   │   │   │       ├── toggle-block.tsx
+│   │   │   │   │   │       ├── embed-block.tsx
+│   │   │   │   │   │       └── database-view-block.tsx
+│   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── use-editor-instance.ts
+│   │   │   │   │   │   ├── use-collab-provider.ts
+│   │   │   │   │   │   ├── use-awareness.ts
+│   │   │   │   │   │   └── use-connection-status.ts
+│   │   │   │   │   ├── lib/
+│   │   │   │   │   │   ├── block-schema.ts
+│   │   │   │   │   │   ├── editor-config.ts
+│   │   │   │   │   │   ├── user-color.ts
+│   │   │   │   │   │   └── insert-streamed-text.ts
+│   │   │   │   │   └── types.ts
+│   │   │   │   │
+│   │   │   │   ├── database/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── database-shell.tsx
+│   │   │   │   │   │   ├── view-tabs.tsx
+│   │   │   │   │   │   ├── views/
+│   │   │   │   │   │   │   ├── table/
+│   │   │   │   │   │   │   │   ├── table-view.tsx
+│   │   │   │   │   │   │   │   ├── table-header-cell.tsx
+│   │   │   │   │   │   │   │   ├── table-row.tsx
+│   │   │   │   │   │   │   │   ├── add-row-button.tsx
+│   │   │   │   │   │   │   │   └── column-resize-handle.tsx
+│   │   │   │   │   │   │   └── board/
+│   │   │   │   │   │   │       ├── board-view.tsx
+│   │   │   │   │   │   │       ├── board-column.tsx
+│   │   │   │   │   │   │       └── board-card.tsx
+│   │   │   │   │   │   ├── cells/
+│   │   │   │   │   │   │   ├── cell-renderer.tsx
+│   │   │   │   │   │   │   ├── text-cell.tsx
+│   │   │   │   │   │   │   ├── number-cell.tsx
+│   │   │   │   │   │   │   ├── select-cell.tsx
+│   │   │   │   │   │   │   ├── multi-select-cell.tsx
+│   │   │   │   │   │   │   ├── date-cell.tsx
+│   │   │   │   │   │   │   ├── checkbox-cell.tsx
+│   │   │   │   │   │   │   ├── relation-cell.tsx
+│   │   │   │   │   │   │   └── url-cell.tsx
+│   │   │   │   │   │   ├── filters/
+│   │   │   │   │   │   │   ├── filter-bar.tsx
+│   │   │   │   │   │   │   ├── filter-rule-row.tsx
+│   │   │   │   │   │   │   ├── operator-select.tsx
+│   │   │   │   │   │   │   └── filter-value-input.tsx
+│   │   │   │   │   │   ├── sorts/
+│   │   │   │   │   │   │   ├── sort-bar.tsx
+│   │   │   │   │   │   │   └── sort-rule-row.tsx
+│   │   │   │   │   │   └── schema-editor/
+│   │   │   │   │   │       ├── property-list.tsx
+│   │   │   │   │   │       ├── property-editor-panel.tsx
+│   │   │   │   │   │       ├── property-type-select.tsx
+│   │   │   │   │   │       └── configs/
+│   │   │   │   │   │           ├── select-config.tsx
+│   │   │   │   │   │           ├── number-config.tsx
+│   │   │   │   │   │           └── relation-config.tsx
+│   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── use-database.ts
+│   │   │   │   │   │   ├── use-rows.ts
+│   │   │   │   │   │   ├── use-update-cell.ts
+│   │   │   │   │   │   ├── use-view-state.ts
+│   │   │   │   │   │   └── use-row-broadcast.ts
+│   │   │   │   │   ├── lib/
+│   │   │   │   │   │   ├── group-rows.ts
+│   │   │   │   │   │   └── column-defs.ts
+│   │   │   │   │   └── types.ts
+│   │   │   │   │
+│   │   │   │   ├── links/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── backlinks-panel.tsx
+│   │   │   │   │   │   ├── backlink-row.tsx
+│   │   │   │   │   │   └── page-hover-preview.tsx
+│   │   │   │   │   └── hooks/
+│   │   │   │   │       └── use-backlinks.ts
+│   │   │   │   │
+│   │   │   │   ├── search/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── search-dialog.tsx
+│   │   │   │   │   │   ├── search-input.tsx
+│   │   │   │   │   │   ├── search-result-row.tsx
+│   │   │   │   │   │   └── empty-state.tsx
+│   │   │   │   │   └── hooks/
+│   │   │   │   │       ├── use-search.ts
+│   │   │   │   │       └── use-search-hotkey.ts
+│   │   │   │   │
+│   │   │   │   ├── ai/
+│   │   │   │   │   ├── components/
+│   │   │   │   │   │   ├── ai-panel.tsx
+│   │   │   │   │   │   ├── ai-prompt-input.tsx
+│   │   │   │   │   │   ├── ai-inline-preview.tsx
+│   │   │   │   │   │   ├── model-picker.tsx
+│   │   │   │   │   │   └── api-key-form.tsx
+│   │   │   │   │   ├── hooks/
+│   │   │   │   │   │   ├── use-ai-completion.ts
+│   │   │   │   │   │   └── use-ai-settings.ts
+│   │   │   │   │   └── lib/
+│   │   │   │   │       └── prompt-templates.ts
+│   │   │   │   │
+│   │   │   │   └── gmail/
+│   │   │   │       ├── components/
+│   │   │   │       │   ├── connect-gmail-card.tsx
+│   │   │   │       │   ├── email-picker-dialog.tsx
+│   │   │   │       │   └── email-preview.tsx
+│   │   │   │       └── hooks/
+│   │   │   │           └── use-gmail-connection.ts
+│   │   │   │
+│   │   │   ├── components/
+│   │   │   │   ├── ui/                        # shadcn primitives ONLY
+│   │   │   │   └── layout/
+│   │   │   │       ├── app-shell.tsx
+│   │   │   │       ├── resizable-panels.tsx
+│   │   │   │       └── error-boundary.tsx
+│   │   │   │
+│   │   │   ├── lib/
+│   │   │   │   ├── api.ts                     # Hono `hc` typed client → apps/server
+│   │   │   │   ├── query-client.ts
+│   │   │   │   ├── yjs-provider.ts
+│   │   │   │   ├── cn.ts
+│   │   │   │   └── hotkeys.ts
+│   │   │   │
+│   │   │   └── styles/
+│   │   │       └── globals.css
+│   │   ├── vite.config.ts                     # tanstackStart() plugin
+│   │   └── tailwind.config.ts
+│   │
+│   └── server/
+│       ├── src/
+│       │   ├── index.ts                       # Hono app + Hocuspocus mount + listen
+│       │   ├── env.ts                         # zod-validated process.env
+│       │   │
+│       │   ├── db/
+│       │   │   ├── client.ts
+│       │   │   ├── schema/
+│       │   │   │   ├── spaces.ts
+│       │   │   │   ├── members.ts
+│       │   │   │   ├── pages.ts
+│       │   │   │   ├── databases.ts
+│       │   │   │   ├── views.ts
+│       │   │   │   ├── links.ts
+│       │   │   │   ├── integrations.ts
+│       │   │   │   └── relations.ts
+│       │   │   └── migrations/
+│       │   │
+│       │   ├── modules/
+│       │   │   ├── auth/
+│       │   │   │   ├── routes.ts
+│       │   │   │   └── config.ts
+│       │   │   ├── spaces/
+│       │   │   │   ├── routes.ts
+│       │   │   │   ├── service.ts
+│       │   │   │   └── permissions.ts
+│       │   │   ├── pages/
+│       │   │   │   ├── routes.ts
+│       │   │   │   ├── service.ts
+│       │   │   │   └── ordering.ts
+│       │   │   ├── databases/
+│       │   │   │   ├── routes.ts
+│       │   │   │   ├── service.ts
+│       │   │   │   ├── views.service.ts
+│       │   │   │   └── query/
+│       │   │   │       ├── build-where.ts
+│       │   │   │       ├── build-order.ts
+│       │   │   │       └── operators.ts
+│       │   │   ├── search/
+│       │   │   │   ├── routes.ts
+│       │   │   │   └── service.ts
+│       │   │   ├── ai/
+│       │   │   │   ├── routes.ts
+│       │   │   │   ├── openrouter.ts
+│       │   │   │   ├── embeddings.ts
+│       │   │   │   └── retrieval.ts
+│       │   │   └── gmail/
+│       │   │       ├── routes.ts
+│       │   │       ├── oauth.ts
+│       │   │       └── service.ts
+│       │   │
+│       │   ├── collab/
+│       │   │   ├── server.ts
+│       │   │   ├── hooks/
+│       │   │   │   ├── on-authenticate.ts
+│       │   │   │   ├── on-load-document.ts
+│       │   │   │   └── on-store-document.ts
+│       │   │   ├── derive/
+│       │   │   │   ├── extract-title.ts
+│       │   │   │   ├── extract-plaintext.ts
+│       │   │   │   └── extract-links.ts
+│       │   │   └── broadcast.ts
+│       │   │
+│       │   ├── middleware/
+│       │   │   ├── session.ts
+│       │   │   ├── require-space-member.ts
+│       │   │   └── error-handler.ts
+│       │   │
+│       │   └── lib/
+│       │       ├── crypto.ts
+│       │       └── logger.ts
+│       ├── drizzle.config.ts
+│       └── Dockerfile
+│
+├── packages/
+│   └── shared/
+│       └── src/
+│           ├── properties/
+│           │   ├── registry.ts                # client-safe: type, label, operators, schemas
+│           │   ├── base.ts
+│           │   └── types/
+│           │       ├── text.ts
+│           │       ├── number.ts
+│           │       ├── select.ts
+│           │       └── ...
+│           ├── properties-server/             # server-only: SQL builders, never imported by web
+│           │   ├── registry.ts
+│           │   └── types/
+│           │       ├── select.ts              # buildWhere, compare for SQL
+│           │       └── ...
+│           ├── schemas/
+│           ├── types/
+│           └── index.ts                       # root export — client-safe only
+│
+├── tooling/
+│   └── tsconfig/                              # shared tsconfig bases
+├── docker-compose.yml
+├── Caddyfile
+└── package.json                               # Bun workspaces root
+```
+
+---
+
+## TanStack Start rules
+
+- **Routes stay thin.** Loaders fetch via the Hono `hc` client or auth helpers. Layout + redirect logic only. Feature UI lives in `features/`, not route files.
+- **SSR where it helps, not everywhere.** Auth pages, invite accept, and app shell benefit from SSR. Editor and database views set `ssr: false` — BlockNote, Yjs, and TanStack Table are client-only.
+- **Server functions are bootstrap-only.** Use `createServerFn` for session checks, cookie reads, and loader prefetch — not for mutations or business logic. All writes go through Hono.
+- **Do not put Hocuspocus in Start.** WebSocket collab stays on `apps/server`. The web app connects via `lib/yjs-provider.ts` to the server's WS endpoint.
+- **TanStack Query owns client cache.** Loaders seed initial data; Query handles refetch, optimistic updates, and realtime invalidation from broadcasts.
+- **Generated route tree is sacred.** Never edit `routeTree.gen.ts` by hand.
+
+---
+
+## The property system
+
+`packages/shared/src/properties/` is the client-safe contract. Both apps import labels, value schemas, operators, and config schemas from here.
+
+`packages/shared/src/properties-server/` holds SQL-specific logic (`buildWhere`, `compare` for ORDER BY). Only `apps/server` imports this path. The web bundler must never resolve `properties-server/`.
+
+Each file in `properties/types/` exports one client-safe definition:
+
+```ts
+export const selectProperty = {
+  type: 'select',
+  label: 'Select',
+  configSchema: z.object({ options: z.array(selectOptionSchema) }),
+  valueSchema: z.string().nullable(),
+  defaultValue: null,
+  operators: ['is', 'is_not', 'is_empty', 'is_not_empty'],
+} satisfies PropertyDefinition<'select'>
+```
+
+The matching `properties-server/types/select.ts` adds server-only methods:
+
+```ts
+export const selectPropertyServer = {
+  ...selectProperty,
+  buildWhere: (col, op, value) => { /* JSONB SQL fragment */ },
+  compare: (a, b, config) => { /* sort */ },
+} satisfies PropertyServerDefinition<'select'>
+```
+
+Adding a property type means: one client file, one server file, one registry entry in each, one cell component. If a change requires touching more than those four places, the abstraction has leaked.
+
+---
+
+## Server rules
+
+- **`routes.ts` never contains business logic.** Routes validate input with `zValidator`, check permissions via middleware, call a service, and shape the response. If a route handler exceeds ~30 lines, move the body to the service.
+- **`service.ts` never imports Hono.** Services take plain arguments and return plain data, so AI tools and Hocuspocus hooks can call them directly.
+- **Every mutating route goes through `requireSpaceMember`.** No exceptions.
+- **Export the app type** from `index.ts` for the client's `hc` import. Never hand-write API response types on the client.
+
+---
+
+## Collaboration rules
+
+- **The Yjs doc is the only source of truth for page body.** `plaintext`, `title`, and `links` rows are derived — computed server-side in `on-store-document.ts` by calling into `collab/derive/`. Never accept them from the client.
+- **Row properties are NOT in the Yjs doc.** They live in the `properties` JSONB column, mutated over HTTP, with changes fanned out via `collab/broadcast.ts`. Last-write-wins per cell. Do not attempt to CRDT them.
+- **AI output is inserted as incremental Y.Text operations**, never by replacing document content. Use `lib/insert-streamed-text.ts`.
+- **`on-authenticate.ts` verifies the session and space membership before returning context.** A document name alone never grants access.
+
+---
+
+## Yjs reconnect and offline behavior
+
+- **Provider lifecycle lives in `use-collab-provider.ts`.** One provider per open page. Destroy on route leave; never share providers across pages.
+- **Use `@hocuspocus/provider` with automatic reconnect.** Exponential backoff is handled by the provider. Surface connection state via `use-connection-status.ts` (connecting, synced, disconnected, reconnecting).
+- **Local edits persist in the Y.Doc while offline.** Yjs buffers updates locally. On reconnect, the provider syncs pending ops to the server. Do not block typing when disconnected — show a banner instead.
+- **Synced ≠ saved.** `on-store-document` runs server-side on debounced store intervals. UI copy: "Synced" means CRDT convergence; "Saved" (optional) means the last store hook completed.
+- **Conflict resolution is CRDT-native for page body.** No custom merge UI for text. For row properties (HTTP), last-write-wins — show a toast if a broadcast overwrites a cell the user is actively editing.
+- **Awareness is ephemeral.** Cursor/presence state is not persisted. Clear local awareness on disconnect; re-join on reconnect.
+- **Auth token refresh.** If the session expires mid-edit, pause the provider, refresh auth via Better Auth, re-authenticate the Hocuspocus connection, then resume. Never reconnect with a stale token in a loop.
+- **Tab close / beforeunload.** Rely on provider disconnect. Do not custom-flush Yjs to HTTP — the server store hook owns persistence.
+
+---
+
+## Drizzle migration workflow
+
+- **Schema lives in `apps/server/src/db/schema/`** — one file per table domain. Drizzle Kit reads `drizzle.config.ts` at the server package root.
+- **Generate, don't hand-write SQL** (except reviewing generated output):
+
+```bash
+cd apps/server
+bun run db:generate    # drizzle-kit generate → src/db/migrations/
+bun run db:migrate     # drizzle-kit migrate (applies pending)
+```
+
+- **Every schema change = one migration commit.** Name migrations descriptively via Drizzle's generated folder name. Never edit a migration that has been applied to shared environments.
+- **Local dev uses Docker Postgres** from `docker-compose.yml`. `DATABASE_URL` in `apps/server/.env`.
+- **CI runs `db:migrate` before integration tests.** Migrations are the source of truth; `db:push` is for throwaway local experiments only — never in CI or production.
+- **Seed data is separate.** Optional `apps/server/src/db/seed.ts`, run manually. Seeds are not migrations.
+- **Destructive changes require a two-step migration** when data exists: add new column → backfill in a script or SQL migration step → drop old column in a follow-up migration.
+
+---
+
+## Search strategy
+
+Hybrid search — tsvector for keyword, pgvector for semantic, merged at query time.
+
+| Layer | Tech | Use for |
+|-------|------|---------|
+| Keyword | `tsvector` on `pages.plaintext`, `pages.title` | Exact terms, titles, quick filter |
+| Semantic | `pgvector` on embedding column | Paraphrases, "find notes about X" |
+| Metadata | JSONB filters via property system | Database row queries, structured filters |
+
+**Indexing pipeline:**
+
+1. `on-store-document` already derives `plaintext` and `title` — trigger tsvector update in the same store hook (or via generated column + trigger in migration).
+2. Embeddings generated async in `modules/ai/embeddings.ts` after store — never block the collab store path.
+3. Search API (`modules/search/service.ts`) runs both queries, merges with reciprocal rank fusion (RRF), deduplicates by `pageId`.
+
+**Client:** `use-search.ts` debounces input (300ms), calls Hono search endpoint. Results show match type badge (keyword / semantic). No client-side embedding.
+
+**Scope:** Search is space-scoped always. `requireSpaceMember` on the search route. Never cross-space vector scan.
+
+---
+
+## Monorepo tooling
+
+**Workspaces** — Bun workspaces in root `package.json`:
+
+```json
+{
+  "workspaces": ["apps/*", "packages/*", "tooling/*"]
+}
+```
+
+**Package naming** — `@notesapp/web`, `@notesapp/server`, `@notesapp/shared`. Internal deps use `"workspace:*"`.
+
+**Root scripts:**
+
+```json
+{
+  "dev": "bun run --filter '@notesapp/web' dev & bun run --filter '@notesapp/server' dev",
+  "build": "bun run --filter '@notesapp/shared' build && bun run --filter '@notesapp/server' build && bun run --filter '@notesapp/web' build",
+  "lint": "bun run --filter '*' lint",
+  "typecheck": "bun run --filter '*' typecheck",
+  "test": "bun run --filter '*' test"
+}
+```
+
+**`packages/shared` build** — TypeScript project references or `tsup` emitting `.d.ts` + ESM. Two export paths in `package.json`:
+
+```json
+{
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/properties-server/index.ts"
+  }
+}
+```
+
+The web app's `vite.config.ts` must alias or mark `@notesapp/shared/server` as external / forbidden via `importProtection` so SQL builders never ship to the client.
+
+**Dev ports** — Web (TanStack Start): `:3000`. Hono + Hocuspocus: `:3001`. Web `.env` sets `VITE_API_URL=http://localhost:3001`.
+
+**Shared TS config** — `tooling/tsconfig/base.json` and `react.json`, extended by each app/package.
+
+---
+
+## Testing
+
+**Runner:** Bun test (`bun test`) for unit/integration. Playwright for E2E in `apps/web`.
+
+| Area | Location | What to test |
+|------|----------|--------------|
+| Property operators | `packages/shared` + `properties-server` | Every operator × type produces correct SQL fragment; `compare` sort order |
+| Property schemas | `packages/shared` | Valid/invalid value parsing per type |
+| Services | `apps/server/src/modules/*/service.test.ts` | Business logic with test DB or mocked Drizzle |
+| Collab derive | `apps/server/src/collab/derive/*.test.ts` | Yjs doc fixtures → expected title, plaintext, links |
+| Filters | `apps/server/src/modules/databases/query/` | Filter rules → SQL against fixture rows |
+| E2E auth + pages | `apps/web/e2e/` | Login, create page, navigate tree |
+| E2E collab | `apps/web/e2e/collab.spec.ts` | Two Playwright contexts, same page, both see edits |
+
+**Collab testing pattern** — Create a Y.Doc fixture in derive tests (no WebSocket). For E2E collab, run two browser contexts against real Hocuspocus in test mode. Assert both editors converge within timeout.
+
+**Property operator tests are mandatory when adding a type.** One test file per type in `properties-server/types/*.test.ts`. No type ships without operator coverage.
+
+**CI order:** lint → typecheck → unit tests → migrate test DB → integration tests → E2E (optional on PR, required on main).
+
+---
+
+## Tailwind
+
+- **Use `cn()` from `lib/cn.ts`** (clsx + tailwind-merge) for every conditional class. Never build class strings with template literals or ternaries inline.
+- **Use `cva` for components with variants.** Define the variant map at the top of the component file; if it exceeds ~40 lines, move it to a sibling `*.variants.ts`.
+- **No `style={{}}`** except for genuinely dynamic values — remote cursor colors, computed column widths, drag transforms.
+- **No arbitrary values** (`w-[347px]`, `text-[#3b82f6]`). Extend `tailwind.config.ts` instead. Exception: one-off layout math like `h-[calc(100vh-3rem)]`.
+- **Semantic color tokens only**: `bg-background`, `text-muted-foreground`, `border-border`. Never `bg-white` or `text-gray-500` — they break dark mode.
+- **No `@apply`.** If a pattern repeats, it's a component.
+- **Class order**: layout → box model → typography → visual → state/variants. Prettier's Tailwind plugin enforces this; don't fight it.
+- **Dark mode is not optional.** Every surface must be checked in both modes before a component is considered done.
+
+---
+
+## TypeScript
+
+- **`strict: true`**, plus `noUncheckedIndexedAccess`.
+- **No `any`.** Use `unknown` and narrow. No `@ts-ignore` — use `@ts-expect-error` with a comment explaining why.
+- **Branded ID types** from `shared/types/ids.ts` (`PageId`, `SpaceId`, `DatabaseId`). Passing a `SpaceId` where a `PageId` belongs must be a compile error.
+- **Zod schemas are the source of truth** for anything crossing a boundary. Derive types with `z.infer`, don't declare them twice.
+- **`type` over `interface`** except when declaration merging is needed.
+
+---
+
+## Naming
+
+- Files and folders: `kebab-case`.
+- Components: `PascalCase`, file named after the component.
+- Hooks: `use-*.ts`, exporting `useThing`.
+- Services: `*.service.ts` or `service.ts` inside a module folder.
+- Zod schemas: `thingSchema`. Inferred types: `Thing`.
+- Booleans: `isX`, `hasX`, `canX`.
+
+---
+
+## Never do
+
+- Create a top-level `components/`, `hooks/`, or `utils/` folder outside a feature.
+- Add barrel `index.ts` files inside features.
+- Write to Postgres from a route handler without going through a service.
+- Trust client-supplied derived fields (title, plaintext, links).
+- Use integer positions for page ordering — fractional indexing only.
+- Reach for `localStorage` for anything that belongs on the server.
+- Add a dependency that duplicates something already in the stack. Check first.
+- Let a file cross 500 lines. Split it.
+- Import `@notesapp/shared/server` from `apps/web`.
+- Put business logic in TanStack Start server functions — call Hono instead.
+- Run Hocuspocus under Bun.
