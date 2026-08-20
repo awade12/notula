@@ -22,7 +22,7 @@ const config = defineConfig({
     noExternal: [/@tanstack\//, 'react', 'react-dom', 'framer-motion'],
   },
   resolve: {
-    dedupe: ['@tanstack/store', '@tanstack/react-store', 'react', 'react-dom', 'yjs'],
+    dedupe: ['react', 'react-dom', 'yjs'],
     alias: existsSync(proIconPack)
       ? {}
       : {
