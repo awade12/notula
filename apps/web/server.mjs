@@ -87,6 +87,13 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
 
+    if (url.pathname === '/health') {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+      res.end('ok')
+      return
+    }
+
     if (tryServeStatic(url.pathname, req, res)) return
 
     const response = await handler.fetch(await toWebRequest(req))

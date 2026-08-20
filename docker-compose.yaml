@@ -1,9 +1,11 @@
 # Notula production stack for Coolify (docker-compose.yaml is the default path).
 # Local dev Postgres only: docker-compose.yml
 #
-# Coolify domains (set in UI per service, then redeploy with clear build cache):
-#   web    → https://notes.bluevistastudio.com  (SERVICE_FQDN_WEB_3000)
-#   server → https://api.bluevistastudio.com      (SERVICE_FQDN_SERVER_3001)
+# Coolify domains — set on EACH service in the compose UI (include internal port):
+#   web    → https://notes.bluevistastudio.com:3000
+#   server → https://api.bluevistastudio.com:3001
+# The :3000 / :3001 suffix is required for Traefik routing (not shown in the browser URL).
+# After changing domains, redeploy with clear build cache.
 #
 # Coolify bug: SERVICE_URL_* may stay on the old sslip.io URL after you set custom
 # domains. This stack prefers SERVICE_FQDN_* (correct) for runtime + web build.
@@ -104,7 +106,7 @@ services:
     expose:
       - '3000'
     healthcheck:
-      test: ['CMD-SHELL', 'node -e "fetch(\"http://127.0.0.1:3000/\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://127.0.0.1:3000/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
       interval: 10s
       timeout: 10s
       retries: 10
