@@ -10,13 +10,7 @@ if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
 fi
 
 echo "[server] Validating environment..."
-node --import tsx -e "
-import { loadEnv } from './src/env.ts'
-const env = loadEnv()
-console.log('[server] BETTER_AUTH_URL=' + env.BETTER_AUTH_URL)
-console.log('[server] WEB_ORIGIN=' + env.WEB_ORIGIN)
-console.log('[server] PORT=' + env.PORT)
-"
+node --import tsx scripts/validate-env.ts
 
 echo "[server] Starting HTTP server..."
 exec node --import tsx src/index.ts

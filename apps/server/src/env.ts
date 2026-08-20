@@ -57,6 +57,10 @@ export function loadEnv(): Env {
     emptyToUndefined(process.env.SERVICE_FQDN_SERVER_3001)
       ? normalizePublicUrl(process.env.SERVICE_FQDN_SERVER_3001)
       : undefined,
+    process.env.COOLIFY_URL,
+    emptyToUndefined(process.env.COOLIFY_FQDN)
+      ? normalizePublicUrl(process.env.COOLIFY_FQDN)
+      : undefined,
   )
 
   const webOrigin = resolvePublicUrl(
@@ -64,6 +68,10 @@ export function loadEnv(): Env {
     process.env.SERVICE_URL_WEB,
     emptyToUndefined(process.env.SERVICE_FQDN_WEB_3000)
       ? normalizePublicUrl(process.env.SERVICE_FQDN_WEB_3000)
+      : undefined,
+    process.env.COOLIFY_URL,
+    emptyToUndefined(process.env.COOLIFY_FQDN)
+      ? normalizePublicUrl(process.env.COOLIFY_FQDN)
       : undefined,
   )
 
