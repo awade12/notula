@@ -5,7 +5,7 @@ ARG HUGEICONS_LICENSE_KEY=""
 ENV HUGEICONS_LICENSE_KEY=$HUGEICONS_LICENSE_KEY
 ENV NODE_ENV=development
 
-COPY package.json bun.lock .npmrc ./
+COPY package.json bun.lock bunfig.toml .npmrc ./
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
