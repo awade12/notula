@@ -1,4 +1,4 @@
-FROM oven/bun:1.3-alpine AS deps
+FROM oven/bun:1.3 AS deps
 WORKDIR /app
 
 ARG HUGEICONS_LICENSE_KEY=""
@@ -15,15 +15,18 @@ RUN bun install --frozen-lockfile
 FROM deps AS build
 WORKDIR /app
 
-ARG VITE_API_URL=""
+ARG VITE_API_URL="http://server:3001"
 ENV VITE_API_URL=$VITE_API_URL
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 COPY tooling tooling
 
-RUN bun run --filter @notesapp/shared build
-RUN bun run --filter @notesapp/web build
+RUN bun run --filter @notesapp/shared build \
+  && cd apps/web \
+  && bun run generate-routes \
+  && bun run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/apps/web

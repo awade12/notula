@@ -23,11 +23,7 @@ services:
       start_period: 20s
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
-      args:
-        HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
+    image: notula-server
     restart: 'no'
     entrypoint: ['sh', '-c']
     environment:
@@ -43,6 +39,7 @@ services:
       dockerfile: Dockerfile.server
       args:
         HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
+    image: notula-server
     restart: unless-stopped
     environment:
       SERVICE_FQDN_SERVER_3001: ''
@@ -72,7 +69,7 @@ services:
       dockerfile: Dockerfile.web
       args:
         HUGEICONS_LICENSE_KEY: ${HUGEICONS_LICENSE_KEY:-}
-        VITE_API_URL: ${SERVICE_URL_SERVER:-${VITE_API_URL:?Set VITE_API_URL or deploy on Coolify}}
+        VITE_API_URL: ${SERVICE_URL_SERVER:-${VITE_API_URL:-http://server:3001}}
     restart: unless-stopped
     environment:
       SERVICE_FQDN_WEB_3000: ''
