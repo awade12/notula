@@ -15,6 +15,9 @@ const freeIconPack = path.resolve(appDir, 'node_modules/@hugeicons/core-free-ico
 const config = defineConfig({
   envDir: rootDir,
   plugins: [tsconfigPaths(), tailwindcss(), tanstackStart(), viteReact()],
+  build: {
+    sourcemap: false,
+  },
   resolve: {
     alias: existsSync(proIconPack)
       ? {}
