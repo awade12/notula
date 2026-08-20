@@ -11,9 +11,9 @@ if [ -z "${DATABASE_URL:-}" ] && [ -z "${PGPASSWORD:-}" ]; then
 fi
 
 echo "[migrate] Applying Drizzle migrations..."
-bun run db:migrate
+../../node_modules/.bin/drizzle-kit migrate
 
 echo "[migrate] Applying pgvector migration..."
-bun run db:migrate:pgvector || true
+node scripts/migrate-pgvector.mjs || true
 
 echo "[migrate] Database migrations finished."

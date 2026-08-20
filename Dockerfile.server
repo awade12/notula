@@ -12,17 +12,19 @@ COPY packages/shared/package.json packages/shared/
 COPY tooling/tsconfig tooling/tsconfig/
 
 RUN bun install --frozen-lockfile
-RUN bun add tsx
 
-FROM deps AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/bun.lock ./bun.lock
 COPY packages/shared packages/shared
 COPY apps/server apps/server
 COPY tooling tooling
-COPY package.json bun.lock .npmrc ./
 
 RUN chmod +x apps/server/docker-entrypoint.sh apps/server/docker-migrate.sh
 

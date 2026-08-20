@@ -24,6 +24,8 @@ const config = defineConfig({
       '@tanstack/react-router',
       '@tanstack/react-start-client',
       '@tanstack/start-client-core',
+      'react',
+      'react-dom',
     ],
   },
   resolve: {
