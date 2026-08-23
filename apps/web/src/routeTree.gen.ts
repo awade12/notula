@@ -33,13 +33,16 @@ import { Route as AppSSpaceIdDbDatabaseIdRouteImport } from './routes/_app/s.$sp
 import { Route as AppSSpaceIdPPageIdRouteImport } from './routes/_app/s.$spaceId/p.$pageId'
 import { Route as AppSSpaceIdProjectsIndexRouteImport } from './routes/_app/s.$spaceId/projects/index'
 import { Route as AppSSpaceIdProjectsBoardIdRouteImport } from './routes/_app/s.$spaceId/projects/$boardId'
+import { Route as AppSSpaceIdProjectsAllRouteImport } from './routes/_app/s.$spaceId/projects/all'
 import { Route as AppSSpaceIdSettingsMembersRouteImport } from './routes/_app/s.$spaceId/settings/members'
 import { Route as AppSSpaceIdProjectsBoardIdIndexRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/index'
 import { Route as AppSSpaceIdProjectsBoardIdSettingsRouteRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/route'
 import { Route as AppSSpaceIdProjectsBoardIdSettingsIndexRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/index'
+import { Route as AppSSpaceIdProjectsBoardIdSettingsDangerRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/danger'
 import { Route as AppSSpaceIdProjectsBoardIdSettingsLabelsRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/labels'
 import { Route as AppSSpaceIdProjectsBoardIdSettingsMilestonesRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/milestones'
 import { Route as AppSSpaceIdProjectsBoardIdSettingsPublicRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/public'
+import { Route as AppSSpaceIdProjectsBoardIdSettingsStatusRouteImport } from './routes/_app/s.$spaceId/projects/$boardId/settings/status'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -163,6 +166,11 @@ const AppSSpaceIdProjectsBoardIdRoute =
     path: '/projects/$boardId',
     getParentRoute: () => AppSSpaceIdRouteRoute,
   } as any)
+const AppSSpaceIdProjectsAllRoute = AppSSpaceIdProjectsAllRouteImport.update({
+  id: '/projects/all',
+  path: '/projects/all',
+  getParentRoute: () => AppSSpaceIdRouteRoute,
+} as any)
 const AppSSpaceIdSettingsMembersRoute =
   AppSSpaceIdSettingsMembersRouteImport.update({
     id: '/settings/members',
@@ -187,6 +195,12 @@ const AppSSpaceIdProjectsBoardIdSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AppSSpaceIdProjectsBoardIdSettingsRouteRoute,
   } as any)
+const AppSSpaceIdProjectsBoardIdSettingsDangerRoute =
+  AppSSpaceIdProjectsBoardIdSettingsDangerRouteImport.update({
+    id: '/danger',
+    path: '/danger',
+    getParentRoute: () => AppSSpaceIdProjectsBoardIdSettingsRouteRoute,
+  } as any)
 const AppSSpaceIdProjectsBoardIdSettingsLabelsRoute =
   AppSSpaceIdProjectsBoardIdSettingsLabelsRouteImport.update({
     id: '/labels',
@@ -203,6 +217,12 @@ const AppSSpaceIdProjectsBoardIdSettingsPublicRoute =
   AppSSpaceIdProjectsBoardIdSettingsPublicRouteImport.update({
     id: '/public',
     path: '/public',
+    getParentRoute: () => AppSSpaceIdProjectsBoardIdSettingsRouteRoute,
+  } as any)
+const AppSSpaceIdProjectsBoardIdSettingsStatusRoute =
+  AppSSpaceIdProjectsBoardIdSettingsStatusRouteImport.update({
+    id: '/status',
+    path: '/status',
     getParentRoute: () => AppSSpaceIdProjectsBoardIdSettingsRouteRoute,
   } as any)
 
@@ -229,13 +249,16 @@ export interface FileRoutesByFullPath {
   '/s/$spaceId/db/$databaseId': typeof AppSSpaceIdDbDatabaseIdRoute
   '/s/$spaceId/p/$pageId': typeof AppSSpaceIdPPageIdRoute
   '/s/$spaceId/projects/$boardId': typeof AppSSpaceIdProjectsBoardIdRouteWithChildren
+  '/s/$spaceId/projects/all': typeof AppSSpaceIdProjectsAllRoute
   '/s/$spaceId/settings/members': typeof AppSSpaceIdSettingsMembersRoute
   '/s/$spaceId/projects/': typeof AppSSpaceIdProjectsIndexRoute
   '/s/$spaceId/projects/$boardId/settings': typeof AppSSpaceIdProjectsBoardIdSettingsRouteRouteWithChildren
   '/s/$spaceId/projects/$boardId/': typeof AppSSpaceIdProjectsBoardIdIndexRoute
+  '/s/$spaceId/projects/$boardId/settings/danger': typeof AppSSpaceIdProjectsBoardIdSettingsDangerRoute
   '/s/$spaceId/projects/$boardId/settings/labels': typeof AppSSpaceIdProjectsBoardIdSettingsLabelsRoute
   '/s/$spaceId/projects/$boardId/settings/milestones': typeof AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute
   '/s/$spaceId/projects/$boardId/settings/public': typeof AppSSpaceIdProjectsBoardIdSettingsPublicRoute
+  '/s/$spaceId/projects/$boardId/settings/status': typeof AppSSpaceIdProjectsBoardIdSettingsStatusRoute
   '/s/$spaceId/projects/$boardId/settings/': typeof AppSSpaceIdProjectsBoardIdSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -258,12 +281,15 @@ export interface FileRoutesByTo {
   '/s/$spaceId': typeof AppSSpaceIdIndexRoute
   '/s/$spaceId/db/$databaseId': typeof AppSSpaceIdDbDatabaseIdRoute
   '/s/$spaceId/p/$pageId': typeof AppSSpaceIdPPageIdRoute
+  '/s/$spaceId/projects/all': typeof AppSSpaceIdProjectsAllRoute
   '/s/$spaceId/settings/members': typeof AppSSpaceIdSettingsMembersRoute
   '/s/$spaceId/projects': typeof AppSSpaceIdProjectsIndexRoute
   '/s/$spaceId/projects/$boardId': typeof AppSSpaceIdProjectsBoardIdIndexRoute
+  '/s/$spaceId/projects/$boardId/settings/danger': typeof AppSSpaceIdProjectsBoardIdSettingsDangerRoute
   '/s/$spaceId/projects/$boardId/settings/labels': typeof AppSSpaceIdProjectsBoardIdSettingsLabelsRoute
   '/s/$spaceId/projects/$boardId/settings/milestones': typeof AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute
   '/s/$spaceId/projects/$boardId/settings/public': typeof AppSSpaceIdProjectsBoardIdSettingsPublicRoute
+  '/s/$spaceId/projects/$boardId/settings/status': typeof AppSSpaceIdProjectsBoardIdSettingsStatusRoute
   '/s/$spaceId/projects/$boardId/settings': typeof AppSSpaceIdProjectsBoardIdSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -291,13 +317,16 @@ export interface FileRoutesById {
   '/_app/s/$spaceId/db/$databaseId': typeof AppSSpaceIdDbDatabaseIdRoute
   '/_app/s/$spaceId/p/$pageId': typeof AppSSpaceIdPPageIdRoute
   '/_app/s/$spaceId/projects/$boardId': typeof AppSSpaceIdProjectsBoardIdRouteWithChildren
+  '/_app/s/$spaceId/projects/all': typeof AppSSpaceIdProjectsAllRoute
   '/_app/s/$spaceId/settings/members': typeof AppSSpaceIdSettingsMembersRoute
   '/_app/s/$spaceId/projects/': typeof AppSSpaceIdProjectsIndexRoute
   '/_app/s/$spaceId/projects/$boardId/settings': typeof AppSSpaceIdProjectsBoardIdSettingsRouteRouteWithChildren
   '/_app/s/$spaceId/projects/$boardId/': typeof AppSSpaceIdProjectsBoardIdIndexRoute
+  '/_app/s/$spaceId/projects/$boardId/settings/danger': typeof AppSSpaceIdProjectsBoardIdSettingsDangerRoute
   '/_app/s/$spaceId/projects/$boardId/settings/labels': typeof AppSSpaceIdProjectsBoardIdSettingsLabelsRoute
   '/_app/s/$spaceId/projects/$boardId/settings/milestones': typeof AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute
   '/_app/s/$spaceId/projects/$boardId/settings/public': typeof AppSSpaceIdProjectsBoardIdSettingsPublicRoute
+  '/_app/s/$spaceId/projects/$boardId/settings/status': typeof AppSSpaceIdProjectsBoardIdSettingsStatusRoute
   '/_app/s/$spaceId/projects/$boardId/settings/': typeof AppSSpaceIdProjectsBoardIdSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -325,13 +354,16 @@ export interface FileRouteTypes {
     | '/s/$spaceId/db/$databaseId'
     | '/s/$spaceId/p/$pageId'
     | '/s/$spaceId/projects/$boardId'
+    | '/s/$spaceId/projects/all'
     | '/s/$spaceId/settings/members'
     | '/s/$spaceId/projects/'
     | '/s/$spaceId/projects/$boardId/settings'
     | '/s/$spaceId/projects/$boardId/'
+    | '/s/$spaceId/projects/$boardId/settings/danger'
     | '/s/$spaceId/projects/$boardId/settings/labels'
     | '/s/$spaceId/projects/$boardId/settings/milestones'
     | '/s/$spaceId/projects/$boardId/settings/public'
+    | '/s/$spaceId/projects/$boardId/settings/status'
     | '/s/$spaceId/projects/$boardId/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -354,12 +386,15 @@ export interface FileRouteTypes {
     | '/s/$spaceId'
     | '/s/$spaceId/db/$databaseId'
     | '/s/$spaceId/p/$pageId'
+    | '/s/$spaceId/projects/all'
     | '/s/$spaceId/settings/members'
     | '/s/$spaceId/projects'
     | '/s/$spaceId/projects/$boardId'
+    | '/s/$spaceId/projects/$boardId/settings/danger'
     | '/s/$spaceId/projects/$boardId/settings/labels'
     | '/s/$spaceId/projects/$boardId/settings/milestones'
     | '/s/$spaceId/projects/$boardId/settings/public'
+    | '/s/$spaceId/projects/$boardId/settings/status'
     | '/s/$spaceId/projects/$boardId/settings'
   id:
     | '__root__'
@@ -386,13 +421,16 @@ export interface FileRouteTypes {
     | '/_app/s/$spaceId/db/$databaseId'
     | '/_app/s/$spaceId/p/$pageId'
     | '/_app/s/$spaceId/projects/$boardId'
+    | '/_app/s/$spaceId/projects/all'
     | '/_app/s/$spaceId/settings/members'
     | '/_app/s/$spaceId/projects/'
     | '/_app/s/$spaceId/projects/$boardId/settings'
     | '/_app/s/$spaceId/projects/$boardId/'
+    | '/_app/s/$spaceId/projects/$boardId/settings/danger'
     | '/_app/s/$spaceId/projects/$boardId/settings/labels'
     | '/_app/s/$spaceId/projects/$boardId/settings/milestones'
     | '/_app/s/$spaceId/projects/$boardId/settings/public'
+    | '/_app/s/$spaceId/projects/$boardId/settings/status'
     | '/_app/s/$spaceId/projects/$boardId/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -573,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSSpaceIdProjectsBoardIdRouteImport
       parentRoute: typeof AppSSpaceIdRouteRoute
     }
+    '/_app/s/$spaceId/projects/all': {
+      id: '/_app/s/$spaceId/projects/all'
+      path: '/projects/all'
+      fullPath: '/s/$spaceId/projects/all'
+      preLoaderRoute: typeof AppSSpaceIdProjectsAllRouteImport
+      parentRoute: typeof AppSSpaceIdRouteRoute
+    }
     '/_app/s/$spaceId/settings/members': {
       id: '/_app/s/$spaceId/settings/members'
       path: '/settings/members'
@@ -601,6 +646,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSSpaceIdProjectsBoardIdSettingsIndexRouteImport
       parentRoute: typeof AppSSpaceIdProjectsBoardIdSettingsRouteRoute
     }
+    '/_app/s/$spaceId/projects/$boardId/settings/danger': {
+      id: '/_app/s/$spaceId/projects/$boardId/settings/danger'
+      path: '/danger'
+      fullPath: '/s/$spaceId/projects/$boardId/settings/danger'
+      preLoaderRoute: typeof AppSSpaceIdProjectsBoardIdSettingsDangerRouteImport
+      parentRoute: typeof AppSSpaceIdProjectsBoardIdSettingsRouteRoute
+    }
     '/_app/s/$spaceId/projects/$boardId/settings/labels': {
       id: '/_app/s/$spaceId/projects/$boardId/settings/labels'
       path: '/labels'
@@ -620,6 +672,13 @@ declare module '@tanstack/react-router' {
       path: '/public'
       fullPath: '/s/$spaceId/projects/$boardId/settings/public'
       preLoaderRoute: typeof AppSSpaceIdProjectsBoardIdSettingsPublicRouteImport
+      parentRoute: typeof AppSSpaceIdProjectsBoardIdSettingsRouteRoute
+    }
+    '/_app/s/$spaceId/projects/$boardId/settings/status': {
+      id: '/_app/s/$spaceId/projects/$boardId/settings/status'
+      path: '/status'
+      fullPath: '/s/$spaceId/projects/$boardId/settings/status'
+      preLoaderRoute: typeof AppSSpaceIdProjectsBoardIdSettingsStatusRouteImport
       parentRoute: typeof AppSSpaceIdProjectsBoardIdSettingsRouteRoute
     }
   }
@@ -659,20 +718,26 @@ const AppSettingsRouteRouteWithChildren =
   AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
 
 interface AppSSpaceIdProjectsBoardIdSettingsRouteRouteChildren {
+  AppSSpaceIdProjectsBoardIdSettingsDangerRoute: typeof AppSSpaceIdProjectsBoardIdSettingsDangerRoute
   AppSSpaceIdProjectsBoardIdSettingsLabelsRoute: typeof AppSSpaceIdProjectsBoardIdSettingsLabelsRoute
   AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute: typeof AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute
   AppSSpaceIdProjectsBoardIdSettingsPublicRoute: typeof AppSSpaceIdProjectsBoardIdSettingsPublicRoute
+  AppSSpaceIdProjectsBoardIdSettingsStatusRoute: typeof AppSSpaceIdProjectsBoardIdSettingsStatusRoute
   AppSSpaceIdProjectsBoardIdSettingsIndexRoute: typeof AppSSpaceIdProjectsBoardIdSettingsIndexRoute
 }
 
 const AppSSpaceIdProjectsBoardIdSettingsRouteRouteChildren: AppSSpaceIdProjectsBoardIdSettingsRouteRouteChildren =
   {
+    AppSSpaceIdProjectsBoardIdSettingsDangerRoute:
+      AppSSpaceIdProjectsBoardIdSettingsDangerRoute,
     AppSSpaceIdProjectsBoardIdSettingsLabelsRoute:
       AppSSpaceIdProjectsBoardIdSettingsLabelsRoute,
     AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute:
       AppSSpaceIdProjectsBoardIdSettingsMilestonesRoute,
     AppSSpaceIdProjectsBoardIdSettingsPublicRoute:
       AppSSpaceIdProjectsBoardIdSettingsPublicRoute,
+    AppSSpaceIdProjectsBoardIdSettingsStatusRoute:
+      AppSSpaceIdProjectsBoardIdSettingsStatusRoute,
     AppSSpaceIdProjectsBoardIdSettingsIndexRoute:
       AppSSpaceIdProjectsBoardIdSettingsIndexRoute,
   }
@@ -704,6 +769,7 @@ interface AppSSpaceIdRouteRouteChildren {
   AppSSpaceIdDbDatabaseIdRoute: typeof AppSSpaceIdDbDatabaseIdRoute
   AppSSpaceIdPPageIdRoute: typeof AppSSpaceIdPPageIdRoute
   AppSSpaceIdProjectsBoardIdRoute: typeof AppSSpaceIdProjectsBoardIdRouteWithChildren
+  AppSSpaceIdProjectsAllRoute: typeof AppSSpaceIdProjectsAllRoute
   AppSSpaceIdSettingsMembersRoute: typeof AppSSpaceIdSettingsMembersRoute
   AppSSpaceIdProjectsIndexRoute: typeof AppSSpaceIdProjectsIndexRoute
 }
@@ -713,6 +779,7 @@ const AppSSpaceIdRouteRouteChildren: AppSSpaceIdRouteRouteChildren = {
   AppSSpaceIdDbDatabaseIdRoute: AppSSpaceIdDbDatabaseIdRoute,
   AppSSpaceIdPPageIdRoute: AppSSpaceIdPPageIdRoute,
   AppSSpaceIdProjectsBoardIdRoute: AppSSpaceIdProjectsBoardIdRouteWithChildren,
+  AppSSpaceIdProjectsAllRoute: AppSSpaceIdProjectsAllRoute,
   AppSSpaceIdSettingsMembersRoute: AppSSpaceIdSettingsMembersRoute,
   AppSSpaceIdProjectsIndexRoute: AppSSpaceIdProjectsIndexRoute,
 }

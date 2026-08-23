@@ -3,13 +3,37 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { useUserPreferences } from '@/features/settings/hooks/use-user-preferences'
 
-export type SearchResult = {
+type SearchMatchType = 'title' | 'keyword' | 'semantic'
+
+export type SearchPageResult = {
+  resultType: 'page'
   id: string
   title: string
   icon: string | null
   snippet: string
-  matchType: 'title' | 'keyword' | 'semantic'
+  matchType: SearchMatchType
   updatedAt: string
+}
+
+export type SearchTaskResult = {
+  resultType: 'task'
+  id: string
+  boardId: string
+  boardTitle: string
+  title: string
+  snippet: string
+  matchType: SearchMatchType
+  updatedAt: string
+}
+
+export type SearchResult = SearchPageResult | SearchTaskResult
+
+export function isSearchPageResult(result: SearchResult): result is SearchPageResult {
+  return result.resultType === 'page'
+}
+
+export function isSearchTaskResult(result: SearchResult): result is SearchTaskResult {
+  return result.resultType === 'task'
 }
 
 export function useSearch(spaceId: string, query: string) {
@@ -50,6 +74,7 @@ export function filterSearchResultsByScope(
   if (scope === 'all') return results
 
   return results.filter((result) => {
+    if (isSearchTaskResult(result)) return false
     const kind = pageKinds.get(result.id) ?? 'note'
     if (scope === 'notes') return kind === 'note'
     return kind === 'folder'

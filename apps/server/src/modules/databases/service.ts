@@ -30,6 +30,49 @@ import {
 import {
   broadcastDatabaseRowUpdate,
 } from '../../collab/broadcast'
+import {
+  readTaskDescriptionText,
+  readTaskTitle,
+} from '../ai/retrieval'
+import { scheduleTaskEmbeddingIndex } from '../ai/index-task-embedding'
+import { user } from '../../db/schema/auth'
+import { appendTaskActivity } from './task-activity.service'
+
+async function getActorName(db: Db, userId: string) {
+  const [row] = await db.select({ name: user.name }).from(user).where(eq(user.id, userId)).limit(1)
+  return row?.name?.trim() || 'Someone'
+}
+
+function formatActivityValue(value: unknown) {
+  if (value === null || value === undefined || value === '') return 'Empty'
+  if (typeof value === 'string') return value
+  if (typeof value === 'number') return String(value)
+  if (Array.isArray(value)) return value.join(', ')
+  return JSON.stringify(value)
+}
+
+async function recordProjectTaskActivity(
+  db: Db,
+  input: {
+    spaceId: string
+    rowId: string
+    userId: string
+    kind: 'status_change' | 'property_change' | 'created' | 'comment'
+    body: string
+    metadata?: Record<string, unknown>
+  },
+) {
+  const actorName = await getActorName(db, input.userId)
+  await appendTaskActivity(db, {
+    rowId: input.rowId,
+    spaceId: input.spaceId,
+    actorId: input.userId,
+    actorName,
+    kind: input.kind,
+    body: input.body,
+    metadata: input.metadata ?? null,
+  })
+}
 
 async function filterValidPageIds(db: Db, spaceId: string, pageIds: string[]) {
   if (pageIds.length === 0) return []
@@ -51,8 +94,9 @@ export async function updateRowCellWithBroadcast(
   rowId: string,
   userId: string,
   input: { propertyId: string; value: unknown },
+  authSecret?: string,
 ) {
-  const result = await updateRowCell(db, spaceId, databaseId, rowId, userId, input)
+  const result = await updateRowCell(db, spaceId, databaseId, rowId, userId, input, authSecret)
   broadcastDatabaseRowUpdate(collab, databaseId, {
     rowId,
     propertyId: input.propertyId,
@@ -69,8 +113,9 @@ export async function createRowWithBroadcast(
   databaseId: string,
   userId: string,
   input?: { properties?: Record<string, unknown> },
+  authSecret?: string,
 ) {
-  const row = await createRow(db, spaceId, databaseId, userId, input)
+  const row = await createRow(db, spaceId, databaseId, userId, input, authSecret)
   broadcastDatabaseRowUpdate(collab, databaseId, {
     rowId: row.id,
     action: 'create',
@@ -224,6 +269,8 @@ export async function createDatabase(
         propertyIds,
       }
 
+  const boardViewPosition = initialPagePosition([])
+
   await db.insert(databaseViews).values({
     id: viewId,
     databaseId: id,
@@ -231,8 +278,24 @@ export async function createDatabase(
     type: isProjectBoard ? 'board' : 'table',
     title: isProjectBoard ? 'Board' : 'Table',
     config: viewConfig,
-    position: initialPagePosition([]),
+    position: boardViewPosition,
   })
+
+  if (isProjectBoard) {
+    await db.insert(databaseViews).values({
+      id: randomUUID(),
+      databaseId: id,
+      spaceId,
+      type: 'table',
+      title: 'Table',
+      config: {
+        propertyIds,
+        filters: [],
+        sorts: [],
+      },
+      position: positionAfter([boardViewPosition]),
+    })
+  }
 
   return getDatabase(db, spaceId, id, userId)
 }
@@ -248,6 +311,7 @@ export async function getDatabase(db: Db, spaceId: string, databaseId: string, u
       title: databases.title,
       icon: databases.icon,
       schema: databases.schema,
+      isProjectBoard: databases.isProjectBoard,
       isPublic: databases.isPublic,
       publicSlug: databases.publicSlug,
       updatedAt: databases.updatedAt,
@@ -342,7 +406,7 @@ export async function listRows(
 ) {
   await getDatabase(db, spaceId, databaseId, userId)
 
-  const limit = Math.min(options?.limit ?? 200, 500)
+  const limit = Math.min(options?.limit ?? 200, 2000)
   const offset = options?.offset ?? 0
   const filterSql = combineFilters(options?.filters)
   const orderClauses = buildSortClause(options?.sorts)
@@ -391,6 +455,7 @@ export async function createRow(
   databaseId: string,
   userId: string,
   input?: { properties?: Record<string, unknown> },
+  authSecret?: string,
 ) {
   const database = await getDatabase(db, spaceId, databaseId, userId)
 
@@ -424,6 +489,25 @@ export async function createRow(
     position,
   })
 
+  if (authSecret && database.isProjectBoard) {
+    scheduleTaskEmbeddingIndex(
+      db,
+      authSecret,
+      spaceId,
+      id,
+      database.title,
+      readTaskTitle(properties),
+      readTaskDescriptionText(properties),
+    )
+    await recordProjectTaskActivity(db, {
+      spaceId,
+      rowId: id,
+      userId,
+      kind: 'created',
+      body: 'Created this task',
+    })
+  }
+
   return {
     id,
     databaseId,
@@ -440,6 +524,7 @@ export async function updateRowCell(
   rowId: string,
   userId: string,
   input: { propertyId: string; value: unknown },
+  authSecret?: string,
 ) {
   const database = await getDatabase(db, spaceId, databaseId, userId)
   const property = findProperty(database.schema.properties, input.propertyId)
@@ -485,6 +570,40 @@ export async function updateRowCell(
       updatedAt: new Date(),
     })
     .where(eq(databaseRows.id, rowId))
+
+  if (authSecret && database.isProjectBoard) {
+    scheduleTaskEmbeddingIndex(
+      db,
+      authSecret,
+      spaceId,
+      rowId,
+      database.title,
+      readTaskTitle(nextProperties),
+      readTaskDescriptionText(nextProperties),
+    )
+  }
+
+  const previousValue = row.properties[input.propertyId]
+  if (
+    database.isProjectBoard &&
+    JSON.stringify(previousValue) !== JSON.stringify(nextValue)
+  ) {
+    const isStatus = input.propertyId === 'status'
+    await recordProjectTaskActivity(db, {
+      spaceId,
+      rowId,
+      userId,
+      kind: isStatus ? 'status_change' : 'property_change',
+      body: isStatus
+        ? `${formatActivityValue(previousValue)} → ${formatActivityValue(nextValue)}`
+        : `Updated ${property.name}`,
+      metadata: {
+        propertyId: input.propertyId,
+        from: previousValue,
+        to: nextValue,
+      },
+    })
+  }
 
   return {
     id: rowId,
@@ -648,6 +767,25 @@ export async function moveKanbanRow(
 
   await db.update(databaseRows).set(patch).where(eq(databaseRows.id, rowId))
 
+  if (
+    database.isProjectBoard &&
+    input.statusPropertyId &&
+    row.properties[input.statusPropertyId] !== nextProperties[input.statusPropertyId]
+  ) {
+    await recordProjectTaskActivity(db, {
+      spaceId,
+      rowId,
+      userId,
+      kind: 'status_change',
+      body: `${formatActivityValue(row.properties[input.statusPropertyId])} → ${formatActivityValue(nextProperties[input.statusPropertyId])}`,
+      metadata: {
+        propertyId: input.statusPropertyId,
+        from: row.properties[input.statusPropertyId],
+        to: nextProperties[input.statusPropertyId],
+      },
+    })
+  }
+
   return {
     id: rowId,
     position: position ?? siblings.find((item) => item.id === rowId)?.position ?? '',
@@ -681,4 +819,105 @@ export async function moveKanbanRowWithBroadcast(
   }
 
   return result
+}
+
+export async function duplicateRow(
+  db: Db,
+  spaceId: string,
+  databaseId: string,
+  rowId: string,
+  userId: string,
+  authSecret?: string,
+) {
+  await getDatabase(db, spaceId, databaseId, userId)
+
+  const [row] = await db
+    .select({
+      id: databaseRows.id,
+      properties: databaseRows.properties,
+    })
+    .from(databaseRows)
+    .where(
+      and(
+        eq(databaseRows.id, rowId),
+        eq(databaseRows.databaseId, databaseId),
+        eq(databaseRows.spaceId, spaceId),
+      ),
+    )
+    .limit(1)
+
+  if (!row) {
+    throw new Error('Not found')
+  }
+
+  const nextProperties = { ...row.properties }
+  const rawTitle = nextProperties.title
+  if (typeof rawTitle === 'string' && rawTitle.trim()) {
+    nextProperties.title = `${rawTitle.trim()} (copy)`
+  }
+
+  return createRow(db, spaceId, databaseId, userId, { properties: nextProperties }, authSecret)
+}
+
+export async function moveRowToBoard(
+  db: Db,
+  spaceId: string,
+  databaseId: string,
+  rowId: string,
+  targetBoardId: string,
+  userId: string,
+) {
+  await getDatabase(db, spaceId, databaseId, userId)
+  const targetBoard = await getDatabase(db, spaceId, targetBoardId, userId)
+
+  if (!targetBoard.isProjectBoard) {
+    throw new Error('Target must be a project board')
+  }
+
+  const [row] = await db
+    .select({ id: databaseRows.id })
+    .from(databaseRows)
+    .where(
+      and(
+        eq(databaseRows.id, rowId),
+        eq(databaseRows.databaseId, databaseId),
+        eq(databaseRows.spaceId, spaceId),
+      ),
+    )
+    .limit(1)
+
+  if (!row) {
+    throw new Error('Not found')
+  }
+
+  const siblings = await db
+    .select({ position: databaseRows.position })
+    .from(databaseRows)
+    .where(and(eq(databaseRows.databaseId, targetBoardId), eq(databaseRows.spaceId, spaceId)))
+    .orderBy(asc(databaseRows.position))
+
+  const position =
+    siblings.length === 0
+      ? initialPagePosition([])
+      : positionAfter(siblings.map((item) => item.position))
+
+  await db
+    .update(databaseRows)
+    .set({
+      databaseId: targetBoardId,
+      position,
+      updatedAt: new Date(),
+    })
+    .where(eq(databaseRows.id, rowId))
+
+  await recordProjectTaskActivity(db, {
+    spaceId,
+    rowId,
+    userId,
+    kind: 'property_change',
+    body: `Moved to ${targetBoard.title}`,
+    metadata: { targetBoardId },
+  })
+
+  return { id: rowId, databaseId: targetBoardId }
 }

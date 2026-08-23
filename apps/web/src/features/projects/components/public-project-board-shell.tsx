@@ -1,7 +1,9 @@
 import { findProperty } from '@notesapp/shared'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { SlidePanelLayout } from '@/components/layout/slide-panel-layout'
 import { PageIconDisplay } from '@/features/workspace/components/page-icon-display'
 import { ProjectKanbanView } from '@/features/projects/components/project-kanban-view'
+import { ProjectTaskPanel } from '@/features/projects/components/project-task-panel'
 import type { PublicBoardPayload } from '@/features/projects/hooks/use-public-board'
 
 type PublicProjectBoardShellProps = {
@@ -10,6 +12,7 @@ type PublicProjectBoardShellProps = {
 
 export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProps) {
   const { database, rows } = payload
+  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>()
   const boardView = database.views.find((view) => view.type === 'board') ?? database.views[0]
 
   const groupProperty = useMemo(() => {
@@ -42,6 +45,11 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
     [database.schema.properties],
   )
 
+  const selectedTask = useMemo(
+    () => (selectedTaskId ? rows.find((row) => row.id === selectedTaskId) : undefined),
+    [rows, selectedTaskId],
+  )
+
   if (!boardView || !groupProperty || groupProperty.type !== 'select' || !titleProperty) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-sidebar px-6">
@@ -50,44 +58,74 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
     )
   }
 
+  const hiddenGroupIds = boardView.config.hiddenGroupIds ?? []
+  const panelOpen = Boolean(selectedTask)
+
   return (
     <div className="min-h-screen bg-sidebar">
-      <div className="mx-auto max-w-[1400px] px-6 py-8">
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
-              {database.icon ? (
-                <PageIconDisplay value={database.icon} size={22} />
-              ) : (
-                <span className="text-lg text-text-primary/35">📋</span>
-              )}
-            </span>
-            <div className="min-w-0">
-              <p className="text-meta tracking-dashboard text-text-primary/45">Public board</p>
-              <h1 className="mt-1 text-2xl font-medium tracking-dashboard text-text-emphasis">
-                {database.title}
-              </h1>
-              <p className="mt-1 text-xs tracking-dashboard text-text-primary/45">
-                Read-only · {rows.length} tasks
-              </p>
+      <SlidePanelLayout
+        open={panelOpen}
+        panelWidth="min(calc(100vw - 3rem), 960px)"
+        panel={
+          selectedTask ? (
+            <ProjectTaskPanel
+              spaceId={database.spaceId}
+              boardId={database.id}
+              boardTitle={database.title}
+              row={selectedTask}
+              groupProperty={groupProperty}
+              titleProperty={titleProperty}
+              labelProperty={labelProperty}
+              milestoneProperty={milestoneProperty}
+              priorityProperty={priorityProperty}
+              linkedNoteProperty={linkedNoteProperty}
+              pages={[]}
+              members={[]}
+              readOnly
+              onClose={() => setSelectedTaskId(undefined)}
+            />
+          ) : null
+        }
+      >
+        <div className="mx-auto max-w-[1400px] px-6 py-8">
+          <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
+                {database.icon ? (
+                  <PageIconDisplay value={database.icon} size={22} />
+                ) : (
+                  <span className="text-lg text-text-primary/35">📋</span>
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="text-meta tracking-dashboard text-text-primary/45">Public board</p>
+                <h1 className="mt-1 text-2xl font-medium tracking-dashboard text-text-emphasis">
+                  {database.title}
+                </h1>
+                <p className="mt-1 text-xs tracking-dashboard text-text-primary/45">
+                  Read-only · {rows.length} tasks
+                </p>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <ProjectKanbanView
-          spaceId={database.spaceId}
-          databaseId={database.id}
-          rows={rows}
-          groupProperty={groupProperty}
-          titleProperty={titleProperty}
-          labelProperty={labelProperty}
-          milestoneProperty={milestoneProperty}
-          priorityProperty={priorityProperty}
-          linkedNoteProperty={linkedNoteProperty}
-          readOnly
-          onOpenTask={() => {}}
-        />
-      </div>
+          <ProjectKanbanView
+            spaceId={database.spaceId}
+            databaseId={database.id}
+            rows={rows}
+            groupProperty={groupProperty}
+            titleProperty={titleProperty}
+            labelProperty={labelProperty}
+            milestoneProperty={milestoneProperty}
+            priorityProperty={priorityProperty}
+            linkedNoteProperty={linkedNoteProperty}
+            hiddenGroupIds={hiddenGroupIds}
+            selectedTaskId={selectedTaskId}
+            readOnly
+            onOpenTask={setSelectedTaskId}
+          />
+        </div>
+      </SlidePanelLayout>
     </div>
   )
 }

@@ -9,6 +9,7 @@ export const aiFeatureFlagsSchema = z.object({
   meetingPrep: z.boolean(),
   duplicateDetection: z.boolean(),
   inlineGhostCompletion: z.boolean(),
+  teamspaceAsk: z.boolean(),
 })
 
 export type AiFeatureFlags = z.infer<typeof aiFeatureFlagsSchema>
@@ -22,6 +23,7 @@ export const DEFAULT_AI_FEATURE_FLAGS: AiFeatureFlags = {
   meetingPrep: true,
   duplicateDetection: true,
   inlineGhostCompletion: false,
+  teamspaceAsk: true,
 }
 
 export function parseAiFeatureFlags(value: unknown): AiFeatureFlags {

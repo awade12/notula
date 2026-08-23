@@ -7,6 +7,7 @@ export type AiFeatureFlags = {
   meetingPrep: boolean
   duplicateDetection: boolean
   inlineGhostCompletion: boolean
+  teamspaceAsk: boolean
 }
 
 export const DEFAULT_AI_FEATURE_FLAGS: AiFeatureFlags = {
@@ -18,6 +19,7 @@ export const DEFAULT_AI_FEATURE_FLAGS: AiFeatureFlags = {
   meetingPrep: true,
   duplicateDetection: true,
   inlineGhostCompletion: false,
+  teamspaceAsk: true,
 }
 
 export function mergeAiFeatureFlags(partial: Partial<AiFeatureFlags> | undefined): AiFeatureFlags {

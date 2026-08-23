@@ -25,6 +25,7 @@ export const databaseViewConfigSchema = z.object({
   filters: z.array(filterRuleSchema).optional(),
   sorts: z.array(sortRuleSchema).optional(),
   groupByPropertyId: z.string().nullable().optional(),
+  hiddenGroupIds: z.array(z.string()).optional(),
 })
 
 export type FilterOperator = z.infer<typeof filterOperatorSchema>

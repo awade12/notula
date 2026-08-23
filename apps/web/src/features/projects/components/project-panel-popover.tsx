@@ -10,6 +10,7 @@ type ProjectPanelPopoverProps = {
   children: ReactNode
   className?: string
   minWidth?: number
+  align?: 'start' | 'end'
 }
 
 type PopoverPosition = {
@@ -18,12 +19,17 @@ type PopoverPosition = {
   width: number
 }
 
-function measurePosition(anchor: HTMLElement, minWidth: number): PopoverPosition {
+function measurePosition(
+  anchor: HTMLElement,
+  minWidth: number,
+  align: 'start' | 'end',
+): PopoverPosition {
   const rect = anchor.getBoundingClientRect()
   const width = Math.max(rect.width, minWidth)
-  let left = rect.left
+  let left = align === 'end' ? rect.right - width : rect.left
   const maxLeft = window.innerWidth - width - 8
   if (left > maxLeft) left = Math.max(8, maxLeft)
+  if (left < 8) left = 8
 
   const preferredTop = rect.bottom + 6
   const estimatedHeight = 280
@@ -42,6 +48,7 @@ export function ProjectPanelPopover({
   children,
   className,
   minWidth = 220,
+  align = 'start',
 }: ProjectPanelPopoverProps) {
   const [position, setPosition] = useState<PopoverPosition | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -58,7 +65,7 @@ export function ProjectPanelPopover({
     function updatePosition() {
       const nextAnchor = anchorRef.current
       if (!nextAnchor) return
-      setPosition(measurePosition(nextAnchor, minWidth))
+      setPosition(measurePosition(nextAnchor, minWidth, align))
     }
 
     updatePosition()
@@ -79,7 +86,7 @@ export function ProjectPanelPopover({
       window.removeEventListener('scroll', updatePosition, true)
       document.removeEventListener('mousedown', handlePointerDown)
     }
-  }, [anchorRef, minWidth, onClose, open])
+  }, [align, anchorRef, minWidth, onClose, open])
 
   if (!open || !position || typeof document === 'undefined') return null
 

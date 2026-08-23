@@ -11,6 +11,7 @@ const createPageSchema = z.object({
   title: z.string().max(200).optional(),
   parentId: z.string().nullable().optional(),
   kind: z.enum(['note', 'folder']).optional(),
+  markdown: z.string().max(32000).optional(),
 })
 
 const updatePageSchema = z.object({

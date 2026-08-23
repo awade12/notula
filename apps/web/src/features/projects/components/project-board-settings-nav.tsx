@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
-import { Globe, Tag, Target } from 'lucide-react'
+import { Columns3, Globe, Tag, Target, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 type ProjectBoardSettingsNavProps = {
@@ -9,11 +9,22 @@ type ProjectBoardSettingsNavProps = {
 }
 
 const navItems: Array<{
-  to: '/s/$spaceId/projects/$boardId/settings/labels' | '/s/$spaceId/projects/$boardId/settings/milestones' | '/s/$spaceId/projects/$boardId/settings/public'
+  to:
+    | '/s/$spaceId/projects/$boardId/settings/status'
+    | '/s/$spaceId/projects/$boardId/settings/labels'
+    | '/s/$spaceId/projects/$boardId/settings/milestones'
+    | '/s/$spaceId/projects/$boardId/settings/public'
+    | '/s/$spaceId/projects/$boardId/settings/danger'
   label: string
   description: string
   icon: LucideIcon
 }> = [
+  {
+    to: '/s/$spaceId/projects/$boardId/settings/status',
+    label: 'Status',
+    description: 'Kanban columns',
+    icon: Columns3,
+  },
   {
     to: '/s/$spaceId/projects/$boardId/settings/labels',
     label: 'Labels',
@@ -31,6 +42,12 @@ const navItems: Array<{
     label: 'Public board',
     description: 'Share read-only link',
     icon: Globe,
+  },
+  {
+    to: '/s/$spaceId/projects/$boardId/settings/danger',
+    label: 'Danger zone',
+    description: 'Delete board',
+    icon: Trash2,
   },
 ]
 

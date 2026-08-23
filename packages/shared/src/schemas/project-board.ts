@@ -13,6 +13,20 @@ export const PROJECT_BOARD_PROPERTY_IDS = {
   linkedNote: 'linked_note',
 } as const
 
+export const PROJECT_TASK_DESCRIPTION_MAX_LENGTH = 64_000
+export const PROJECT_BOARD_ASSIGNEE_LIMIT = 8
+
+export function normalizeAssigneeValue(value: unknown): string[] {
+  if (value === null || value === undefined || value === '') return []
+  if (typeof value === 'string') return value ? [value] : []
+  if (!Array.isArray(value)) return []
+  return [
+    ...new Set(
+      value.filter((item): item is string => typeof item === 'string' && item.length > 0),
+    ),
+  ].slice(0, PROJECT_BOARD_ASSIGNEE_LIMIT)
+}
+
 export const DEFAULT_PROJECT_LABELS: SelectOption[] = [
   { id: 'bug', label: 'Bug', color: 'red' },
   { id: 'feature', label: 'Feature', color: 'blue' },
@@ -63,7 +77,12 @@ const PROJECT_BOARD_EXTRA_PROPERTIES: PropertyDefinition[] = [
   },
   { id: PROJECT_BOARD_PROPERTY_IDS.estimate, name: 'Estimate', type: 'number' },
   { id: PROJECT_BOARD_PROPERTY_IDS.dueDate, name: 'Due date', type: 'text' },
-  { id: PROJECT_BOARD_PROPERTY_IDS.assignee, name: 'Assignee', type: 'text' },
+  {
+    id: PROJECT_BOARD_PROPERTY_IDS.assignee,
+    name: 'Assignees',
+    type: 'relation',
+    config: { limit: PROJECT_BOARD_ASSIGNEE_LIMIT },
+  },
 ]
 
 export function normalizeMultiSelectValue(value: unknown): string[] {
@@ -114,6 +133,23 @@ function upgradeLabelProperty(property: PropertyDefinition): PropertyDefinition 
   return property
 }
 
+function upgradeAssigneeProperty(property: PropertyDefinition): PropertyDefinition {
+  if (property.id !== PROJECT_BOARD_PROPERTY_IDS.assignee) return property
+  if (property.type === 'relation') {
+    return {
+      ...property,
+      name: 'Assignees',
+      config: { ...property.config, limit: property.config?.limit ?? PROJECT_BOARD_ASSIGNEE_LIMIT },
+    }
+  }
+  return {
+    id: property.id,
+    name: 'Assignees',
+    type: 'relation',
+    config: { limit: PROJECT_BOARD_ASSIGNEE_LIMIT },
+  }
+}
+
 export function slugifyBoardPublicSlug(input: string) {
   return input
     .trim()
@@ -128,7 +164,7 @@ export function mergeProjectBoardSchema(schema: DatabaseSchema): DatabaseSchema 
   const appended = PROJECT_BOARD_EXTRA_PROPERTIES.filter((property) => !existingIds.has(property.id))
 
   const properties = [...schema.properties, ...appended].map((property) => {
-    const upgraded = upgradeLabelProperty(property)
+    const upgraded = upgradeAssigneeProperty(upgradeLabelProperty(property))
     if (upgraded.id === PROJECT_BOARD_PROPERTY_IDS.label) {
       return mergeSelectPropertyOptions(upgraded, DEFAULT_PROJECT_LABELS)
     }

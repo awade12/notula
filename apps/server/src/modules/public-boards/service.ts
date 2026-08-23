@@ -56,7 +56,7 @@ export async function getPublicBoardBySlug(db: Db, slug: string) {
     .orderBy(asc(databaseViews.position))
 
   const boardView = views.find((view) => view.type === 'board') ?? views[0]
-  const limit = 500
+  const limit = 2000
 
   const rows = await db
     .select({

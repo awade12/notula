@@ -16,6 +16,14 @@ const commentNotifySchema = z.object({
   recipientUserIds: z.array(z.string().min(1)).max(50),
 })
 
+const taskNotifySchema = z.object({
+  boardId: z.string().min(1).max(64),
+  rowId: z.string().min(1).max(64),
+  taskTitle: z.string().max(500),
+  summary: z.string().max(500).optional(),
+  recipientUserIds: z.array(z.string().min(1)).max(20),
+})
+
 export function createNotificationsRoutes(db: Db) {
   const app = new Hono<{ Variables: SessionVariables }>()
 
@@ -75,6 +83,49 @@ export function createSpaceNotificationRoutes(db: Db) {
       spaceId: c.get('spaceId'),
       pageId: body.pageId,
       pageTitle: body.pageTitle,
+      recipientUserIds: body.recipientUserIds,
+    })
+
+    return c.json(result, 201)
+  })
+
+  app.post('/task-comment', requireSpaceEditor, zValidator('json', taskNotifySchema), async (c) => {
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+    const body = c.req.valid('json')
+    const actorName =
+      typeof user.name === 'string' && user.name.trim() ? user.name.trim() : 'Someone'
+
+    const result = await notificationsService.createTaskCommentNotifications(db, {
+      actorId: user.id,
+      actorName,
+      spaceId: c.get('spaceId'),
+      boardId: body.boardId,
+      rowId: body.rowId,
+      taskTitle: body.taskTitle,
+      recipientUserIds: body.recipientUserIds,
+    })
+
+    return c.json(result, 201)
+  })
+
+  app.post('/task-ai', requireSpaceEditor, zValidator('json', taskNotifySchema), async (c) => {
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+    const body = c.req.valid('json')
+    const actorName =
+      typeof user.name === 'string' && user.name.trim() ? user.name.trim() : 'Someone'
+
+    const result = await notificationsService.createTaskAiNotifications(db, {
+      actorId: user.id,
+      actorName,
+      spaceId: c.get('spaceId'),
+      boardId: body.boardId,
+      rowId: body.rowId,
+      taskTitle: body.taskTitle,
+      summary: body.summary ?? 'AI changes applied',
       recipientUserIds: body.recipientUserIds,
     })
 

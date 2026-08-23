@@ -15,14 +15,14 @@ import {
   taskChevronDownIcon,
   taskCloseIcon,
 } from '../lib/project-icon-pack'
-import { projectPanelFieldTrigger } from '../lib/project-panel-classes'
+import { projectPanelInlineChevron, projectPanelTriggerClass, type ProjectPanelFieldVariant } from '../lib/project-panel-classes'
 import { ProjectPanelPopover } from './project-panel-popover'
 import { ProjectTaskCalendar } from './project-task-calendar'
 
 type ProjectTaskDueDateFieldProps = {
   value: unknown
   readOnly?: boolean
-  variant?: 'field' | 'compact'
+  variant?: ProjectPanelFieldVariant | 'compact'
   onCommit: (value: string) => void
 }
 
@@ -52,6 +52,7 @@ export function ProjectTaskDueDateField({
   }
 
   const isCompact = variant === 'compact'
+  const isInline = variant === 'inline'
 
   return (
     <>
@@ -59,6 +60,7 @@ export function ProjectTaskDueDateField({
         ref={triggerRef}
         type="button"
         disabled={readOnly}
+        data-open={open}
         onClick={openCalendar}
         className={cn(
           isCompact
@@ -68,19 +70,30 @@ export function ProjectTaskDueDateField({
                 overdue ? 'text-red-300/85' : 'text-text-primary/70',
                 !displayLabel && 'text-text-primary/40',
               )
-            : cn(projectPanelFieldTrigger, !displayLabel && 'text-text-primary/40'),
+            : cn(
+                projectPanelTriggerClass(isInline ? 'inline' : 'field'),
+                isInline && 'w-auto',
+                !displayLabel && 'text-text-primary/40',
+              ),
         )}
       >
         <span className="flex min-w-0 items-center gap-1.5">
-          <WorkspaceIcon
-            icon={taskCalendarIcon}
-            size={isCompact ? iconSize.section : iconSize.menu}
-            className={overdue ? 'text-red-300/70' : 'text-text-primary/45'}
-          />
-          <span className="truncate">{displayLabel ?? (isCompact ? 'Due date' : 'No due date')}</span>
+          {!isInline ? (
+            <WorkspaceIcon
+              icon={taskCalendarIcon}
+              size={isCompact ? iconSize.section : iconSize.menu}
+              className={overdue ? 'text-red-300/70' : 'text-text-primary/45'}
+            />
+          ) : null}
+          <span className={cn('truncate', overdue && isInline && 'text-red-300/85')}>
+            {displayLabel ?? (isCompact ? 'Due date' : 'No due date')}
+          </span>
         </span>
-        {!readOnly && !isCompact ? (
+        {!readOnly && !isCompact && !isInline ? (
           <WorkspaceIcon icon={taskChevronDownIcon} size={iconSize.section} className="text-text-primary/40" />
+        ) : null}
+        {!readOnly && isInline ? (
+          <WorkspaceIcon icon={taskChevronDownIcon} size={iconSize.section} className={projectPanelInlineChevron} />
         ) : null}
       </button>
 
@@ -89,6 +102,7 @@ export function ProjectTaskDueDateField({
         anchorRef={triggerRef}
         onClose={() => setOpen(false)}
         minWidth={280}
+        align={isInline ? 'end' : 'start'}
         className="p-0"
       >
         <ProjectTaskCalendar

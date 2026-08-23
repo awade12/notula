@@ -1,5 +1,6 @@
 import { boolean, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import type { DatabaseSchema, DatabaseViewConfig } from '@notesapp/shared'
+import { embeddingVector } from './pages'
 import { spaces } from './spaces'
 
 export type { DatabaseViewConfig }
@@ -46,6 +47,7 @@ export const databaseRows = pgTable('database_rows', {
     .references(() => spaces.id, { onDelete: 'cascade' }),
   properties: jsonb('properties').$type<Record<string, unknown>>().notNull(),
   position: text('position').notNull(),
+  embedding: embeddingVector('embedding'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

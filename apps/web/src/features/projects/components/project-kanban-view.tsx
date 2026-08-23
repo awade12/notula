@@ -26,6 +26,7 @@ type ProjectKanbanViewProps = {
   pages?: FlatPage[]
   members?: SpaceMember[]
   selectedTaskId?: string
+  hiddenGroupIds?: string[]
   readOnly?: boolean
   onOpenTask: (taskId: string) => void
 }
@@ -44,15 +45,17 @@ export function ProjectKanbanView({
   members = [],
   selectedTaskId,
   readOnly = false,
+  hiddenGroupIds = [],
   onOpenTask,
 }: ProjectKanbanViewProps) {
   const createRow = useCreateRow(spaceId, databaseId)
   const moveKanbanTask = useMoveKanbanTask(spaceId, databaseId)
 
-  const groups = useMemo(
-    () => groupRowsBySelect(rows, groupProperty, { includeEmptyGroup: false }),
-    [groupProperty, rows],
-  )
+  const groups = useMemo(() => {
+    const all = groupRowsBySelect(rows, groupProperty, { includeEmptyGroup: false })
+    if (hiddenGroupIds.length === 0) return all
+    return all.filter((group) => group.id === null || !hiddenGroupIds.includes(group.id))
+  }, [groupProperty, hiddenGroupIds, rows])
 
   const titlePropertyId = titleProperty?.id ?? 'title'
 
@@ -93,6 +96,7 @@ export function ProjectKanbanView({
           labelProperty={labelProperty}
           milestoneProperty={milestoneProperty}
           priorityProperty={priorityProperty}
+          groupProperty={groupProperty}
           linkedNoteProperty={linkedNoteProperty}
           pages={pages}
           members={members}

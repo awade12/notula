@@ -1,6 +1,17 @@
 import type { PropertyDefinition } from '../schemas/database'
+import { PROJECT_BOARD_PROPERTY_IDS, PROJECT_TASK_DESCRIPTION_MAX_LENGTH } from '../schemas/project-board'
 
 export type PropertyValue = string | number | boolean | null | string[]
+
+const DEFAULT_TEXT_MAX_LENGTH = 2000
+
+function readTextMaxLength(property: PropertyDefinition) {
+  if (property.id === PROJECT_BOARD_PROPERTY_IDS.description) {
+    return PROJECT_TASK_DESCRIPTION_MAX_LENGTH
+  }
+
+  return DEFAULT_TEXT_MAX_LENGTH
+}
 
 export function parseCellValue(
   property: PropertyDefinition,
@@ -12,7 +23,7 @@ export function parseCellValue(
       if (typeof value !== 'string') {
         throw new Error(`Invalid text value for ${property.name}`)
       }
-      return value.slice(0, 2000)
+      return value.slice(0, readTextMaxLength(property))
     }
     case 'number': {
       if (value === null || value === undefined || value === '') return null

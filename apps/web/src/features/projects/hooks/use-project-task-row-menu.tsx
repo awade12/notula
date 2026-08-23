@@ -1,4 +1,4 @@
-import { useCallback, type MouseEvent } from 'react'
+import { useCallback, useState, type MouseEvent } from 'react'
 import { SidebarFloatingMenuPanel } from '@/features/workspace/components/sidebar/sidebar-floating-menu-panel'
 import { useSidebarFloatingMenu } from '@/features/workspace/hooks/use-sidebar-floating-menu'
 import {
@@ -13,16 +13,23 @@ type UseProjectTaskRowMenuProps = ProjectTaskActionsMenuHandlers & {
 export function useProjectTaskRowMenu({
   readOnly = false,
   onOpen,
+  onDuplicate,
+  onArchive,
+  onMoveToBoard,
   onDelete,
+  boards,
+  currentBoardId,
 }: UseProjectTaskRowMenuProps) {
+  const [showMoveTargets, setShowMoveTargets] = useState(false)
   const menu = useSidebarFloatingMenu({
     menuWidth: 208,
-    menuHeight: 120,
+    menuHeight: showMoveTargets ? 320 : 220,
   })
 
   const runAction = useCallback(
     (action: () => void) => {
       menu.close()
+      setShowMoveTargets(false)
       action()
     },
     [menu],
@@ -33,6 +40,7 @@ export function useProjectTaskRowMenu({
       if (readOnly) return
       event.preventDefault()
       event.stopPropagation()
+      setShowMoveTargets(false)
       menu.openAt(event.clientX, event.clientY)
     },
     [menu, readOnly],
@@ -48,7 +56,14 @@ export function useProjectTaskRowMenu({
       <ProjectTaskActionsMenuContent
         onAction={runAction}
         onOpen={onOpen}
+        onDuplicate={onDuplicate}
+        onArchive={onArchive}
+        onMoveToBoard={onMoveToBoard}
         onDelete={onDelete}
+        boards={boards}
+        currentBoardId={currentBoardId}
+        showMoveTargets={showMoveTargets}
+        onToggleMoveTargets={() => setShowMoveTargets((current) => !current)}
       />
     </SidebarFloatingMenuPanel>
   )

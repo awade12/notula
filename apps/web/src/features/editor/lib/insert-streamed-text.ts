@@ -18,6 +18,19 @@ function isEmptyParagraphBlock(editor: NotesEditor, blockId: string): boolean {
   return first?.type === 'text' && first.text.trim() === ''
 }
 
+export function replacePageWithMarkdown(editor: NotesEditor, markdown: string) {
+  const normalized = normalizeAiMarkdown(markdown)
+  if (!normalized) return
+
+  editor.focus()
+  const blocks = editor.tryParseMarkdownToBlocks(normalized)
+  editor.replaceBlocks(editor.document, blocks)
+  const lastBlock = editor.document.at(-1)
+  if (lastBlock) {
+    editor.setTextCursorPosition(lastBlock, 'end')
+  }
+}
+
 export function insertMarkdownAtCursor(editor: NotesEditor, markdown: string) {
   const normalized = normalizeAiMarkdown(markdown)
   if (!normalized) return

@@ -202,10 +202,17 @@ export async function createEmbedding(apiKey: string, input: string) {
   return embedding
 }
 
+type ChatCompletionOptions = {
+  responseFormat?: 'json_object'
+  temperature?: number
+  maxTokens?: number
+}
+
 export async function createChatCompletion(
   apiKey: string,
   model: string,
   messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
+  options?: ChatCompletionOptions,
 ) {
   const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: 'POST',
@@ -213,7 +220,15 @@ export async function createChatCompletion(
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ model, messages }),
+    body: JSON.stringify({
+      model,
+      messages,
+      ...(options?.temperature !== undefined ? { temperature: options.temperature } : {}),
+      ...(options?.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
+      ...(options?.responseFormat === 'json_object'
+        ? { response_format: { type: 'json_object' } }
+        : {}),
+    }),
   })
 
   if (!response.ok) {

@@ -1,6 +1,8 @@
 import { parseCellValue, type PropertyDefinition } from '@notesapp/shared'
 import type { UseMutateAsyncFunction } from '@tanstack/react-query'
 import type { TaskAiAction } from './task-ai-types'
+import { markdownToTaskDescriptionBlocks } from './markdown-to-task-description-blocks'
+import { normalizeTaskAiMarkdown } from './normalize-task-ai-markdown'
 import {
   parseProjectTaskDescription,
   serializeProjectTaskDescription,
@@ -20,8 +22,15 @@ type UpdateCell = UseMutateAsyncFunction<
 
 function normalizeAiValue(property: PropertyDefinition, value: unknown) {
   if (property.id === 'description' && typeof value === 'string') {
-    const blocks = parseProjectTaskDescription(value)
-    return serializeProjectTaskDescription(blocks ?? [{ type: 'paragraph', content: value }])
+    const normalized = normalizeTaskAiMarkdown(value)
+    if (!normalized) return ''
+
+    const looksLikeMarkdown = /(^|\n)\s{0,3}(#{1,6}\s|[-*]\s|\d+\.\s)/.test(normalized)
+    const blocks = looksLikeMarkdown
+      ? markdownToTaskDescriptionBlocks(normalized)
+      : (parseProjectTaskDescription(normalized) ?? [{ type: 'paragraph', content: normalized }])
+
+    return serializeProjectTaskDescription(blocks)
   }
 
   if (property.type === 'select' && value === null) return null

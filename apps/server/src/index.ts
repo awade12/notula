@@ -41,6 +41,7 @@ app.use(
     origin: env.WEB_ORIGIN,
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    exposeHeaders: ['X-Workspace-Citations'],
     credentials: true,
   }),
 )
@@ -56,7 +57,7 @@ app.route('/api/spaces/:spaceId/notifications', createSpaceNotificationRoutes(db
 app.route('/api/invites', createInvitesRoutes(db))
 app.route('/api/notifications', createNotificationsRoutes(db))
 app.route('/api/spaces/:spaceId/pages', createPagesRoutes(db, env))
-app.route('/api/spaces/:spaceId/databases', createDatabasesRoutes(db, collab))
+app.route('/api/spaces/:spaceId/databases', createDatabasesRoutes(db, collab, env.BETTER_AUTH_SECRET))
 app.route('/api/public', createPublicBoardsRoutes(db))
 app.route('/api/spaces/:spaceId/search', createSearchRoutes(db, env))
 app.route('/api/settings', createSettingsRoutes(db, env))

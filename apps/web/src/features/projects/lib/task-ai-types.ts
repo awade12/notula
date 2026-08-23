@@ -4,6 +4,14 @@ export type TaskAiAction = {
   summary: string
 }
 
+export type TaskAiCreateTask = {
+  title: string
+  description?: string
+  status?: string
+  assigneeId?: string | null
+  labelIds?: string[]
+}
+
 export type TaskAiProperty = {
   id: string
   name: string
@@ -20,10 +28,13 @@ export type TaskAiMessage = {
   role: 'user' | 'assistant'
   content: string
   actions?: TaskAiAction[]
+  createTasks?: TaskAiCreateTask[]
   appliedSummaries?: string[]
+  appliedCreateTitles?: string[]
 }
 
 export type TaskAiAgentResponse = {
   reply: string
   actions: TaskAiAction[]
+  createTasks?: TaskAiCreateTask[]
 }

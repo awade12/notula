@@ -74,3 +74,37 @@ export async function notifyCommentParticipants(input: {
     }),
   })
 }
+
+export function parseTaskNotificationLink(body: string | null) {
+  if (!body) return null
+
+  try {
+    const parsed = JSON.parse(body) as {
+      kind?: string
+      boardId?: string
+      rowId?: string
+    }
+    if (parsed.kind === 'task' && parsed.boardId && parsed.rowId) {
+      return { boardId: parsed.boardId, rowId: parsed.rowId }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+export async function notifyTaskAiApplied(input: {
+  spaceId: string
+  boardId: string
+  rowId: string
+  taskTitle: string
+  summary: string
+  recipientUserIds: string[]
+}) {
+  await apiFetch(`/api/spaces/${input.spaceId}/notifications/task-ai`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}

@@ -1,5 +1,5 @@
-import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { LayoutGrid, Settings } from 'lucide-react'
+import { Link, useNavigate, useParams, useRouterState } from '@tanstack/react-router'
+import { LayoutGrid, ListTodo, Settings } from 'lucide-react'
 import { SidebarBlock } from '@/features/workspace/components/sidebar/sidebar-block'
 import { SidebarIcon } from '@/features/workspace/components/sidebar/sidebar-icon'
 import { sidebarEmptyState, sidebarNewPageRow } from '@/features/workspace/lib/sidebar-classes'
@@ -20,7 +20,9 @@ type ProjectsSidebarProps = {
 export function ProjectsSidebar({ spaceId }: ProjectsSidebarProps) {
   const navigate = useNavigate()
   const params = useParams({ strict: false })
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const activeBoardId = 'boardId' in params ? params.boardId : undefined
+  const isAllTasksActive = pathname.endsWith('/projects/all')
   const { data: boards, isLoading } = useProjectBoards(spaceId)
   const createBoard = useCreateProjectBoard(spaceId)
   const canEdit = useCanEditSpace(spaceId)
@@ -51,6 +53,22 @@ export function ProjectsSidebar({ spaceId }: ProjectsSidebarProps) {
           {createBoard.isPending ? 'Creating…' : 'New board'}
         </button>
       ) : null}
+
+      <Link
+        to="/s/$spaceId/projects/all"
+        params={{ spaceId }}
+        className={cn(
+          'mb-1 flex items-center gap-2 rounded-lg px-2 py-2 text-xs tracking-dashboard transition-colors',
+          isAllTasksActive
+            ? 'bg-white/[0.1] font-medium text-text-inverse'
+            : 'text-text-inverse/62 hover:bg-white/[0.05] hover:text-text-inverse',
+        )}
+      >
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white/[0.06]">
+          <ListTodo className="size-3.5 text-text-inverse/55" strokeWidth={1.75} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">All tasks</span>
+      </Link>
 
       {isLoading ? (
         <div className="space-y-1 py-1">

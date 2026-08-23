@@ -1,7 +1,8 @@
+import { Link } from '@tanstack/react-router'
 import { Bell } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import {
+  parseTaskNotificationLink,
   useNotificationActions,
   useNotifications,
 } from '@/features/notifications/hooks/use-notifications'
@@ -48,35 +49,69 @@ export function NotificationsBell() {
           </div>
           <ul className="max-h-64 overflow-y-auto">
             {(data?.notifications ?? []).length === 0 ? (
-              <li className="px-3 py-4 text-meta tracking-dashboard text-text-primary">No notifications yet</li>
+              <li className="px-3 py-4 text-meta tracking-dashboard text-text-primary">
+                No notifications yet
+              </li>
             ) : (
-              data?.notifications.map((item) => (
-                <li key={item.id} className="border-b border-border/60 last:border-0">
-                  {item.spaceId && item.pageId ? (
-                    <Link
-                      to="/s/$spaceId/p/$pageId"
-                      params={{ spaceId: item.spaceId, pageId: item.pageId }}
-                      className={cn(
-                        'block px-3 py-2.5 hover:bg-white/[0.03]',
-                        !item.readAt && 'bg-white/[0.02]',
-                      )}
-                      onClick={() => {
-                        if (!item.readAt) void markRead.mutateAsync(item.id)
-                        setOpen(false)
-                      }}
-                    >
-                      <p className="text-sm tracking-dashboard text-text-emphasis">{item.title}</p>
-                      {item.body ? (
-                        <p className="mt-0.5 text-meta tracking-dashboard text-text-primary">{item.body}</p>
-                      ) : null}
-                    </Link>
-                  ) : (
+              data?.notifications.map((item) => {
+                const taskLink = parseTaskNotificationLink(item.body)
+
+                if (item.spaceId && taskLink) {
+                  return (
+                    <li key={item.id} className="border-b border-border/60 last:border-0">
+                      <Link
+                        to="/s/$spaceId/projects/$boardId"
+                        params={{ spaceId: item.spaceId, boardId: taskLink.boardId }}
+                        search={{ task: taskLink.rowId }}
+                        className={cn(
+                          'block px-3 py-2.5 hover:bg-white/[0.03]',
+                          !item.readAt && 'bg-white/[0.02]',
+                        )}
+                        onClick={() => {
+                          if (!item.readAt) void markRead.mutateAsync(item.id)
+                          setOpen(false)
+                        }}
+                      >
+                        <p className="text-sm tracking-dashboard text-text-emphasis">{item.title}</p>
+                      </Link>
+                    </li>
+                  )
+                }
+
+                if (item.spaceId && item.pageId) {
+                  return (
+                    <li key={item.id} className="border-b border-border/60 last:border-0">
+                      <Link
+                        to="/s/$spaceId/p/$pageId"
+                        params={{ spaceId: item.spaceId, pageId: item.pageId }}
+                        className={cn(
+                          'block px-3 py-2.5 hover:bg-white/[0.03]',
+                          !item.readAt && 'bg-white/[0.02]',
+                        )}
+                        onClick={() => {
+                          if (!item.readAt) void markRead.mutateAsync(item.id)
+                          setOpen(false)
+                        }}
+                      >
+                        <p className="text-sm tracking-dashboard text-text-emphasis">{item.title}</p>
+                        {item.body ? (
+                          <p className="mt-0.5 text-meta tracking-dashboard text-text-primary">
+                            {item.body}
+                          </p>
+                        ) : null}
+                      </Link>
+                    </li>
+                  )
+                }
+
+                return (
+                  <li key={item.id} className="border-b border-border/60 last:border-0">
                     <div className="px-3 py-2.5">
                       <p className="text-sm tracking-dashboard text-text-emphasis">{item.title}</p>
                     </div>
-                  )}
-                </li>
-              ))
+                  </li>
+                )
+              })
             )}
           </ul>
         </div>

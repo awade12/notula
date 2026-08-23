@@ -32,6 +32,7 @@ function readNumber(properties: Record<string, unknown>, propertyId: string) {
 
 export function buildProjectTaskContext(input: {
   row: DatabaseRow
+  boardTitle?: string
   titlePropertyId: string
   statusProperty?: PropertyDefinition
   labelProperty?: PropertyDefinition
@@ -42,6 +43,7 @@ export function buildProjectTaskContext(input: {
 }) {
   const {
     row,
+    boardTitle,
     titlePropertyId,
     statusProperty,
     labelProperty,
@@ -65,8 +67,12 @@ export function buildProjectTaskContext(input: {
   const assignee = members.find((member) => member.userId === assigneeId)
 
   const lines = [
+    boardTitle ? `Board: ${boardTitle}` : null,
+    `Task ID: ${row.id}`,
     `Task: ${title || 'Untitled'}`,
-    description ? `Description:\n${description}` : null,
+    description
+      ? `Description:\n${description}`
+      : 'Description: (empty — user has not written one yet)',
     status ? `Status: ${status}` : null,
     labels ? `Labels: ${labels}` : null,
     priority ? `Priority: ${priority}` : null,

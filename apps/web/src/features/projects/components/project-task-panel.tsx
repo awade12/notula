@@ -3,8 +3,10 @@ import type { PropertyDefinition } from '@notesapp/shared'
 import type { DatabaseRow } from '@/features/database/types'
 import type { FlatPage } from '@/features/workspace/lib/build-tree'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
+import type { ConnectionStatus } from '@/features/editor/types'
 import { useLiveDatabaseRow } from '@/features/database/hooks/use-live-database-row'
 import { buildProjectTaskContext } from '../lib/build-task-context'
+import { resolveLinkedPageId } from '../lib/resolve-linked-page-id'
 import { ProjectTaskDetailsTab } from './project-task-details-tab'
 import { ProjectTaskPanelFrame } from './project-task-panel-frame'
 
@@ -23,6 +25,8 @@ type ProjectTaskPanelProps = {
   pages: FlatPage[]
   members: SpaceMember[]
   readOnly?: boolean
+  connectionStatus?: ConnectionStatus
+  taskUrl?: string
   onClose: () => void
 }
 
@@ -41,6 +45,8 @@ export function ProjectTaskPanel({
   pages,
   members,
   readOnly = false,
+  connectionStatus = 'synced',
+  taskUrl,
   onClose,
 }: ProjectTaskPanelProps) {
   const liveRow = useLiveDatabaseRow(spaceId, boardId, row.id, row)
@@ -64,6 +70,7 @@ export function ProjectTaskPanel({
     () =>
       buildProjectTaskContext({
         row: liveRow,
+        boardTitle,
         titlePropertyId: titleProperty.id,
         statusProperty: groupProperty,
         labelProperty,
@@ -71,11 +78,31 @@ export function ProjectTaskPanel({
         priorityProperty,
         members,
       }),
-    [groupProperty, labelProperty, liveRow, milestoneProperty, members, priorityProperty, titleProperty.id],
+    [
+      boardTitle,
+      groupProperty,
+      labelProperty,
+      liveRow,
+      milestoneProperty,
+      members,
+      priorityProperty,
+      titleProperty.id,
+    ],
   )
 
+  const linkedPageId = useMemo(() => {
+    if (!linkedNoteProperty) return undefined
+    const resolved = resolveLinkedPageId(liveRow.properties[linkedNoteProperty.id])
+    return resolved ?? undefined
+  }, [linkedNoteProperty, liveRow.properties])
+
+  const linkedPageTitle = useMemo(() => {
+    if (!linkedPageId) return undefined
+    return pages.find((page) => page.id === linkedPageId)?.title
+  }, [linkedPageId, pages])
+
   return (
-    <ProjectTaskPanelFrame boardTitle={boardTitle} onClose={onClose}>
+    <ProjectTaskPanelFrame boardTitle={boardTitle} taskUrl={taskUrl} onClose={onClose}>
       <ProjectTaskDetailsTab
         spaceId={spaceId}
         boardId={boardId}
@@ -91,6 +118,9 @@ export function ProjectTaskPanel({
         members={members}
         taskTitle={taskTitle}
         taskContext={taskContext}
+        linkedPageId={linkedPageId}
+        linkedPageTitle={linkedPageTitle}
+        connectionStatus={connectionStatus}
         readOnly={readOnly}
         onClose={onClose}
       />

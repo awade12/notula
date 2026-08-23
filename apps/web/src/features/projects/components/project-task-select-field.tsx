@@ -1,19 +1,21 @@
 import { useRef, useState } from 'react'
-import type { PropertyDefinition, SelectOption } from '@notesapp/shared'
-import { selectOptionClassName } from '@/features/database/lib/select-option-styles'
-import { dbSelectPill } from '@/features/database/lib/database-classes'
+import type { PropertyDefinition } from '@notesapp/shared'
 import { WorkspaceIcon } from '@/features/workspace/components/workspace-icon'
 import { iconSize } from '@/features/workspace/lib/workspace-icon-sizes'
 import { cn } from '@/lib/cn'
-import { taskCheckIcon, taskChevronDownIcon } from '../lib/project-icon-pack'
-import { projectPanelFieldTrigger, projectPanelOption } from '../lib/project-panel-classes'
+import { taskChevronDownIcon } from '../lib/project-icon-pack'
+import { projectPanelInlineChevron, projectPanelTriggerClass, type ProjectPanelFieldVariant } from '../lib/project-panel-classes'
 import { ProjectPanelPopover } from './project-panel-popover'
+import { ProjectPanelSelectMenu, ProjectPanelSelectMenuDivider } from './project-panel-select-menu'
+import { ProjectPanelSelectOption } from './project-panel-select-option'
+import { ProjectPanelSelectPill } from './project-panel-select-pill'
 
 type ProjectTaskSelectFieldProps = {
   property: PropertyDefinition
   value: unknown
   readOnly?: boolean
   emptyLabel?: string
+  variant?: ProjectPanelFieldVariant
   onCommit: (value: unknown) => void
 }
 
@@ -22,6 +24,7 @@ export function ProjectTaskSelectField({
   value,
   readOnly = false,
   emptyLabel = 'None',
+  variant = 'field',
   onCommit,
 }: ProjectTaskSelectFieldProps) {
   const [open, setOpen] = useState(false)
@@ -36,14 +39,27 @@ export function ProjectTaskSelectField({
         ref={triggerRef}
         type="button"
         disabled={readOnly}
+        data-open={open}
         onClick={() => {
           if (!readOnly) setOpen((currentOpen) => !currentOpen)
         }}
-        className={cn(projectPanelFieldTrigger, !selected && 'text-text-primary/40')}
+        className={cn(
+          projectPanelTriggerClass(variant),
+          variant === 'inline' && 'w-auto',
+          !selected && 'text-text-primary/40',
+        )}
       >
-        {selected ? <SelectPill option={selected} /> : <span>{emptyLabel}</span>}
+        {selected ? (
+          <ProjectPanelSelectPill option={selected} size={variant === 'inline' ? 'compact' : 'default'} />
+        ) : (
+          <span className="text-xs">{emptyLabel}</span>
+        )}
         {!readOnly ? (
-          <WorkspaceIcon icon={taskChevronDownIcon} size={iconSize.section} className="text-text-primary/40" />
+          <WorkspaceIcon
+            icon={taskChevronDownIcon}
+            size={iconSize.section}
+            className={variant === 'inline' ? projectPanelInlineChevron : 'text-text-primary/40'}
+          />
         ) : null}
       </button>
 
@@ -51,58 +67,34 @@ export function ProjectTaskSelectField({
         open={open}
         anchorRef={triggerRef}
         onClose={() => setOpen(false)}
-        minWidth={240}
+        minWidth={232}
+        align={variant === 'inline' ? 'end' : 'start'}
+        className="p-0"
       >
-        <OptionRow
-          label={emptyLabel}
-          selected={!current}
-          onSelect={() => {
-            onCommit(null)
-            setOpen(false)
-          }}
-        />
-        {options.map((option) => (
-          <OptionRow
-            key={option.id}
-            label={option.label}
-            selected={current === option.id}
-            option={option}
+        <ProjectPanelSelectMenu>
+          <ProjectPanelSelectOption
+            label={emptyLabel}
+            selected={!current}
             onSelect={() => {
-              onCommit(option.id)
+              onCommit(null)
               setOpen(false)
             }}
           />
-        ))}
+          {options.length > 0 ? <ProjectPanelSelectMenuDivider /> : null}
+          {options.map((option) => (
+            <ProjectPanelSelectOption
+              key={option.id}
+              label={option.label}
+              selected={current === option.id}
+              option={option}
+              onSelect={() => {
+                onCommit(option.id)
+                setOpen(false)
+              }}
+            />
+          ))}
+        </ProjectPanelSelectMenu>
       </ProjectPanelPopover>
     </>
-  )
-}
-
-function SelectPill({ option }: { option: SelectOption }) {
-  return (
-    <span className={cn(dbSelectPill, 'truncate', selectOptionClassName(option.color))}>
-      {option.label}
-    </span>
-  )
-}
-
-function OptionRow({
-  label,
-  selected,
-  option,
-  onSelect,
-}: {
-  label: string
-  selected: boolean
-  option?: SelectOption
-  onSelect: () => void
-}) {
-  return (
-    <button type="button" onClick={onSelect} className={projectPanelOption(selected)}>
-      <span className="flex size-4 shrink-0 items-center justify-center">
-        {selected ? <WorkspaceIcon icon={taskCheckIcon} size={iconSize.section} /> : null}
-      </span>
-      {option ? <SelectPill option={option} /> : <span>{label}</span>}
-    </button>
   )
 }

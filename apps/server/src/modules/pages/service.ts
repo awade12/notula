@@ -3,6 +3,11 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Db } from '../../db/client'
 import { pageLinks } from '../../db/schema/links'
 import { pages } from '../../db/schema/pages'
+import {
+  buildYjsStateFromMarkdown,
+  derivePageTitleFromMarkdown,
+  markdownToPlaintext,
+} from '../../lib/build-yjs-from-markdown'
 import { requireSpaceMembership } from '../spaces/permissions'
 import {
   initialPagePosition,
@@ -83,13 +88,19 @@ export async function createPage(
   db: Db,
   spaceId: string,
   userId: string,
-  input: { title?: string; parentId?: string | null; kind?: 'note' | 'folder' },
+  input: {
+    title?: string
+    parentId?: string | null
+    kind?: 'note' | 'folder'
+    markdown?: string
+  },
 ) {
   await requireSpaceMembership(db, spaceId, userId)
   await assertFolderParent(db, spaceId, input.parentId)
 
   const kind = input.kind ?? 'note'
   const defaultTitle = kind === 'folder' ? 'New folder' : 'Untitled'
+  const markdown = input.markdown?.trim()
 
   const siblingFilter = input.parentId
     ? eq(pages.parentId, input.parentId)
@@ -107,7 +118,13 @@ export async function createPage(
       : positionAfter(siblings.map((row) => row.position))
 
   const id = randomUUID()
-  const title = input.title?.trim() || defaultTitle
+  const title =
+    input.title?.trim() ||
+    (markdown && kind === 'note' ? derivePageTitleFromMarkdown(markdown) : defaultTitle)
+
+  const yjsState =
+    markdown && kind === 'note' ? buildYjsStateFromMarkdown(markdown, title) : undefined
+  const plaintext = markdown && kind === 'note' ? markdownToPlaintext(markdown) : ''
 
   await db.insert(pages).values({
     id,
@@ -116,6 +133,8 @@ export async function createPage(
     kind,
     title,
     position,
+    plaintext,
+    yjsState,
   })
 
   return {

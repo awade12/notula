@@ -1,9 +1,15 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { PROJECT_BOARD_PROPERTY_IDS } from '@notesapp/shared'
 import { getApiUrl } from '@/lib/api'
+import { normalizeTaskAiMarkdown } from '../lib/normalize-task-ai-markdown'
 import type { TaskAiAgentResponse, TaskAiMember, TaskAiMessage, TaskAiProperty } from '../lib/task-ai-types'
 
 type SendMessageInput = {
   prompt: string
+  spaceId: string
+  boardId: string
+  taskId: string
+  linkedPageId?: string
   taskTitle: string
   taskContext: string
   properties: TaskAiProperty[]
@@ -11,11 +17,95 @@ type SendMessageInput = {
   model?: string
 }
 
-export function useTaskAiAgent() {
-  const [messages, setMessages] = useState<TaskAiMessage[]>([])
+const STORAGE_PREFIX = 'notesapp:task-ai:'
+
+function loadStoredMessages(storageKey: string): TaskAiMessage[] {
+  if (typeof sessionStorage === 'undefined') return []
+
+  try {
+    const raw = sessionStorage.getItem(`${STORAGE_PREFIX}${storageKey}`)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed as TaskAiMessage[]
+  } catch {
+    return []
+  }
+}
+
+function saveStoredMessages(storageKey: string, messages: TaskAiMessage[]) {
+  if (typeof sessionStorage === 'undefined') return
+
+  try {
+    if (messages.length === 0) {
+      sessionStorage.removeItem(`${STORAGE_PREFIX}${storageKey}`)
+      return
+    }
+    sessionStorage.setItem(`${STORAGE_PREFIX}${storageKey}`, JSON.stringify(messages))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function normalizeTaskAgentResponse(data: TaskAiAgentResponse): TaskAiAgentResponse {
+  return {
+    reply: normalizeTaskAiMarkdown(data.reply),
+    actions: data.actions.map((action) => {
+      if (
+        action.propertyId !== PROJECT_BOARD_PROPERTY_IDS.description ||
+        typeof action.value !== 'string'
+      ) {
+        return action
+      }
+
+      return {
+        ...action,
+        value: normalizeTaskAiMarkdown(action.value),
+      }
+    }),
+    createTasks: data.createTasks?.map((create) => ({
+      ...create,
+      description: create.description
+        ? normalizeTaskAiMarkdown(create.description)
+        : create.description,
+    })),
+  }
+}
+
+function readTaskAgentError(data: unknown, fallback: string) {
+  if (typeof data !== 'object' || data === null || !('error' in data)) {
+    return fallback
+  }
+
+  const error = (data as { error: unknown }).error
+  if (typeof error === 'string' && error.trim()) return error
+  if (typeof error === 'object' && error !== null && 'issues' in error) {
+    return 'Could not send that request. Try again or check Settings → AI.'
+  }
+
+  return fallback
+}
+
+export function useTaskAiAgent(storageKey: string) {
+  const [messages, setMessages] = useState<TaskAiMessage[]>(() => loadStoredMessages(storageKey))
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const storageKeyRef = useRef(storageKey)
+
+  useEffect(() => {
+    if (storageKeyRef.current === storageKey) return
+    storageKeyRef.current = storageKey
+    abortRef.current?.abort()
+    abortRef.current = null
+    setMessages(loadStoredMessages(storageKey))
+    setError(null)
+    setIsLoading(false)
+  }, [storageKey])
+
+  useEffect(() => {
+    saveStoredMessages(storageKey, messages)
+  }, [messages, storageKey])
 
   const reset = useCallback(() => {
     abortRef.current?.abort()
@@ -23,7 +113,8 @@ export function useTaskAiAgent() {
     setMessages([])
     setError(null)
     setIsLoading(false)
-  }, [])
+    saveStoredMessages(storageKey, [])
+  }, [storageKey])
 
   const stop = useCallback(() => {
     abortRef.current?.abort()
@@ -59,6 +150,10 @@ export function useTaskAiAgent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: trimmed,
+          spaceId: input.spaceId,
+          boardId: input.boardId,
+          taskId: input.taskId,
+          linkedPageId: input.linkedPageId,
           taskTitle: input.taskTitle,
           taskContext: input.taskContext,
           properties: input.properties,
@@ -70,11 +165,11 @@ export function useTaskAiAgent() {
       })
 
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null
-        throw new Error(data?.error ?? 'Task assistant failed')
+        const data = (await response.json().catch(() => null)) as unknown
+        throw new Error(readTaskAgentError(data, 'Task assistant failed'))
       }
 
-      const data = (await response.json()) as TaskAiAgentResponse
+      const data = normalizeTaskAgentResponse((await response.json()) as TaskAiAgentResponse)
 
       setMessages((current) => [
         ...current,
@@ -82,7 +177,9 @@ export function useTaskAiAgent() {
           role: 'assistant',
           content: data.reply,
           actions: data.actions,
+          createTasks: data.createTasks,
           appliedSummaries: [],
+          appliedCreateTitles: [],
         },
       ])
     } catch (requestError) {
@@ -90,7 +187,6 @@ export function useTaskAiAgent() {
       const message =
         requestError instanceof Error ? requestError.message : 'Task assistant failed'
       setError(message)
-      setMessages((current) => current.slice(0, -1))
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null
@@ -109,6 +205,16 @@ export function useTaskAiAgent() {
     )
   }, [])
 
+  const markCreateApplied = useCallback((messageIndex: number, title: string) => {
+    setMessages((current) =>
+      current.map((message, index) => {
+        if (index !== messageIndex || !message.createTasks) return message
+        const appliedCreateTitles = [...(message.appliedCreateTitles ?? []), title]
+        return { ...message, appliedCreateTitles }
+      }),
+    )
+  }, [])
+
   return {
     messages,
     isLoading,
@@ -117,5 +223,6 @@ export function useTaskAiAgent() {
     stop,
     reset,
     markActionApplied,
+    markCreateApplied,
   }
 }

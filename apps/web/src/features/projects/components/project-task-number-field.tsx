@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
-import { projectPanelFieldTrigger } from '../lib/project-panel-classes'
+import { projectPanelTriggerClass, type ProjectPanelFieldVariant } from '../lib/project-panel-classes'
 
 type ProjectTaskNumberFieldProps = {
   value: unknown
   readOnly?: boolean
   placeholder?: string
   suffix?: string
+  variant?: ProjectPanelFieldVariant
   onCommit: (value: number | null) => void
 }
 
@@ -15,6 +16,7 @@ export function ProjectTaskNumberField({
   readOnly = false,
   placeholder = 'None',
   suffix,
+  variant = 'field',
   onCommit,
 }: ProjectTaskNumberFieldProps) {
   const saved = typeof value === 'number' && Number.isFinite(value) ? value : null
@@ -40,7 +42,13 @@ export function ProjectTaskNumberField({
 
   if (readOnly) {
     return (
-      <div className={cn(projectPanelFieldTrigger, !saved && 'text-text-primary/40')}>
+      <div
+        className={cn(
+          projectPanelTriggerClass(variant),
+          variant === 'inline' && 'w-auto',
+          !saved && 'text-text-primary/40',
+        )}
+      >
         {saved !== null ? (
           <span>
             {saved}
@@ -53,8 +61,33 @@ export function ProjectTaskNumberField({
     )
   }
 
+  if (variant === 'inline') {
+    return (
+      <div className={cn(projectPanelTriggerClass('inline'), 'gap-1.5')}>
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          value={draft}
+          placeholder={placeholder}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              commit()
+              ;(event.target as HTMLInputElement).blur()
+            }
+          }}
+          className="w-14 bg-transparent text-right text-sm text-text-emphasis outline-none placeholder:text-text-primary/35"
+        />
+        {suffix ? <span className="shrink-0 text-xs text-text-primary/40">{suffix}</span> : null}
+      </div>
+    )
+  }
+
   return (
-    <div className={cn(projectPanelFieldTrigger, 'gap-2')}>
+    <div className={cn(projectPanelTriggerClass('field'), 'gap-2')}>
       <input
         type="number"
         min={0}

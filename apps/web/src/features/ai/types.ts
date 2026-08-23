@@ -23,12 +23,20 @@ export type AiCompletionTemplate =
 
 export type AiCompletionRequest = {
   prompt: string
+  spaceId?: string
+  pageId?: string
+  includeWorkspaceContext?: boolean
   pageTitle?: string
   pageContext?: string
   selection?: string
   template?: AiCompletionTemplate
   model?: string
   maxTokens?: number
+  messages?: Array<{ role: 'user' | 'assistant'; content: string }>
+  contextRefs?: Array<
+    | { type: 'note'; id: string }
+    | { type: 'task'; id: string; boardId: string }
+  >
 }
 
 export type AiQuickAction = {

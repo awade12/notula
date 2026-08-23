@@ -61,6 +61,16 @@ html[data-cursor-label-mode='never'] .bn-collaboration-cursor__label {
   margin-left: 24px !important;
 }
 
+.notes-editor
+  .bn-block-group
+  .bn-block:not(:has(.bn-toggle-wrapper))
+  .bn-block-group
+  .bn-block-outer:not([data-prev-depth-changed])::before {
+  content: none;
+  border-left: none;
+  display: none;
+}
+
 .notes-editor .bn-block-outer {
   margin-block: var(--editor-block-spacing);
   border-radius: 4px;

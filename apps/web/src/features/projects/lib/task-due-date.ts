@@ -63,6 +63,19 @@ export function buildCalendarCells(viewYear: number, viewMonth: number) {
 
 export const CALENDAR_WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const
 
+export function formatCalendarDayHeading(isoDate: string, todayIso: string) {
+  if (isoDate === todayIso) return 'Today'
+
+  const date = new Date(`${isoDate}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return isoDate
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
 export const CALENDAR_MONTHS = [
   'January',
   'February',

@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:pgvector": "node scripts/migrate-pgvector.mjs",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:seed": "node --import tsx src/db/seed/run-seed.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",
@@ -32,6 +33,7 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@blocknote/core": "0.53.0",
     "@types/node": "^24.2.1",
     "@types/pg": "^8.15.5",
     "@types/ws": "^8.18.1",

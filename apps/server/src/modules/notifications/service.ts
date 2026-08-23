@@ -77,3 +77,107 @@ export async function createCommentNotifications(
 
   return { created: uniqueRecipients.length }
 }
+
+export type TaskNotificationLink = {
+  kind: 'task'
+  boardId: string
+  rowId: string
+}
+
+export function encodeTaskNotificationLink(link: Omit<TaskNotificationLink, 'kind'>) {
+  return JSON.stringify({ kind: 'task', boardId: link.boardId, rowId: link.rowId })
+}
+
+export function parseTaskNotificationLink(body: string | null): TaskNotificationLink | null {
+  if (!body) return null
+
+  try {
+    const parsed = JSON.parse(body) as Partial<TaskNotificationLink>
+    if (
+      parsed.kind === 'task' &&
+      typeof parsed.boardId === 'string' &&
+      typeof parsed.rowId === 'string'
+    ) {
+      return parsed as TaskNotificationLink
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+export async function createTaskCommentNotifications(
+  db: Db,
+  input: {
+    actorId: string
+    actorName: string
+    spaceId: string
+    boardId: string
+    rowId: string
+    taskTitle: string
+    recipientUserIds: string[]
+  },
+) {
+  const uniqueRecipients = [...new Set(input.recipientUserIds)].filter(
+    (id) => id !== input.actorId,
+  )
+
+  if (uniqueRecipients.length === 0) return { created: 0 }
+
+  const now = new Date()
+  const body = encodeTaskNotificationLink({ boardId: input.boardId, rowId: input.rowId })
+
+  await db.insert(notifications).values(
+    uniqueRecipients.map((userId) => ({
+      id: randomUUID(),
+      userId,
+      spaceId: input.spaceId,
+      pageId: null,
+      type: 'task_comment',
+      title: `${input.actorName} commented on ${input.taskTitle}`,
+      body,
+      createdAt: now,
+    })),
+  )
+
+  return { created: uniqueRecipients.length }
+}
+
+export async function createTaskAiNotifications(
+  db: Db,
+  input: {
+    actorId: string
+    actorName: string
+    spaceId: string
+    boardId: string
+    rowId: string
+    taskTitle: string
+    summary: string
+    recipientUserIds: string[]
+  },
+) {
+  const uniqueRecipients = [...new Set(input.recipientUserIds)].filter(
+    (id) => id !== input.actorId,
+  )
+
+  if (uniqueRecipients.length === 0) return { created: 0 }
+
+  const now = new Date()
+  const body = encodeTaskNotificationLink({ boardId: input.boardId, rowId: input.rowId })
+
+  await db.insert(notifications).values(
+    uniqueRecipients.map((userId) => ({
+      id: randomUUID(),
+      userId,
+      spaceId: input.spaceId,
+      pageId: null,
+      type: 'task_ai',
+      title: `${input.actorName} updated ${input.taskTitle}`,
+      body,
+      createdAt: now,
+    })),
+  )
+
+  return { created: uniqueRecipients.length }
+}

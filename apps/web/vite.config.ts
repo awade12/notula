@@ -12,14 +12,17 @@ const rootDir = path.resolve(appDir, '../..')
 const proIconPack = path.resolve(appDir, 'node_modules/@hugeicons-pro/core-stroke-rounded')
 const freeIconPack = path.resolve(appDir, 'node_modules/@hugeicons/core-free-icons')
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
   envDir: rootDir,
   plugins: [tsconfigPaths(), tailwindcss(), tanstackStart(), viteReact()],
   build: {
     sourcemap: false,
   },
   ssr: {
-    noExternal: [/@tanstack\//, 'react', 'react-dom', 'framer-motion'],
+    noExternal:
+      command === 'build'
+        ? [/@tanstack\//, 'react', 'react-dom', 'framer-motion']
+        : [/@tanstack\//, 'framer-motion'],
   },
   resolve: {
     dedupe: ['react', 'react-dom', 'yjs'],
@@ -38,6 +41,6 @@ const config = defineConfig({
       },
     },
   },
-})
+}))
 
 export default config

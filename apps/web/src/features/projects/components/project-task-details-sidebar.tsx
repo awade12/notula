@@ -1,18 +1,20 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import type { PropertyDefinition } from '@notesapp/shared'
 import type { DatabaseRow } from '@/features/database/types'
 import type { FlatPage } from '@/features/workspace/lib/build-tree'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
-import { WorkspaceIcon } from '@/features/workspace/components/workspace-icon'
-import { iconSize } from '@/features/workspace/lib/workspace-icon-sizes'
 import { cn } from '@/lib/cn'
 import { useTaskSidebarWidth } from '../hooks/use-task-sidebar-width'
-import { taskAiIcon } from '../lib/project-icon-pack'
+import { ProjectTaskActivityTab } from './project-task-activity-tab'
 import { ProjectTaskAiTab } from './project-task-ai-tab'
 import { ProjectTaskPropertiesPanel } from './project-task-properties-panel'
 import { ProjectTaskSidebarResizeHandle } from './project-task-sidebar-resize-handle'
+import {
+  ProjectTaskSidebarTabs,
+  type ProjectTaskSidebarTab,
+} from './project-task-sidebar-tabs'
 
-export type ProjectTaskSidebarTab = 'properties' | 'ai'
+export type { ProjectTaskSidebarTab } from './project-task-sidebar-tabs'
 
 type ProjectTaskDetailsSidebarProps = {
   spaceId: string
@@ -28,6 +30,8 @@ type ProjectTaskDetailsSidebarProps = {
   members: SpaceMember[]
   taskTitle: string
   taskContext: string
+  linkedPageId?: string
+  linkedPageTitle?: string
   schemaProperties: PropertyDefinition[]
   updatedLabel?: string | null
   readOnly?: boolean
@@ -48,6 +52,8 @@ export function ProjectTaskDetailsSidebar({
   members,
   taskTitle,
   taskContext,
+  linkedPageId,
+  linkedPageTitle,
   schemaProperties,
   updatedLabel,
   readOnly = false,
@@ -66,73 +72,59 @@ export function ProjectTaskDetailsSidebar({
       className="relative flex shrink-0 flex-col overflow-hidden border-l border-border/60 bg-sidebar"
     >
       <ProjectTaskSidebarResizeHandle onPointerDown={onResizePointerDown} />
-      <div className="flex shrink-0 gap-1 border-b border-border/60 p-2">
-        <SidebarTab active={activeTab === 'properties'} onClick={() => setActiveTab('properties')}>
-          Properties
-        </SidebarTab>
-        <SidebarTab active={activeTab === 'ai'} onClick={() => setActiveTab('ai')}>
-          <WorkspaceIcon icon={taskAiIcon} size={iconSize.section} />
-          AI
-        </SidebarTab>
+      <ProjectTaskSidebarTabs activeTab={activeTab} onChange={setActiveTab} />
+
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 flex-col overflow-hidden',
+          activeTab !== 'properties' && 'hidden',
+        )}
+      >
+        <ProjectTaskPropertiesPanel
+          spaceId={spaceId}
+          boardId={boardId}
+          row={row}
+          groupProperty={groupProperty}
+          labelProperty={labelProperty}
+          milestoneProperty={milestoneProperty}
+          priorityProperty={priorityProperty}
+          estimateProperty={estimateProperty}
+          linkedNoteProperty={linkedNoteProperty}
+          pages={pages}
+          members={members}
+          updatedLabel={updatedLabel}
+          readOnly={readOnly}
+          onClose={onClose}
+        />
       </div>
 
-      {activeTab === 'properties' ? (
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <ProjectTaskPropertiesPanel
-            spaceId={spaceId}
-            boardId={boardId}
-            row={row}
-            groupProperty={groupProperty}
-            labelProperty={labelProperty}
-            milestoneProperty={milestoneProperty}
-            priorityProperty={priorityProperty}
-            estimateProperty={estimateProperty}
-            linkedNoteProperty={linkedNoteProperty}
-            pages={pages}
-            members={members}
-            updatedLabel={updatedLabel}
-            readOnly={readOnly}
-            onClose={onClose}
-          />
-        </div>
-      ) : (
+      <div className={cn('flex min-h-0 flex-1 flex-col', activeTab !== 'activity' && 'hidden')}>
+        <ProjectTaskActivityTab
+          spaceId={spaceId}
+          boardId={boardId}
+          rowId={row.id}
+          readOnly={readOnly}
+        />
+      </div>
+
+      <div className={cn('flex min-h-0 flex-1 flex-col', activeTab !== 'ai' && 'hidden')}>
         <ProjectTaskAiTab
           spaceId={spaceId}
           boardId={boardId}
           rowId={row.id}
           taskTitle={taskTitle}
           taskContext={taskContext}
+          linkedPageId={linkedPageId}
+          linkedPageTitle={linkedPageTitle}
           schemaProperties={schemaProperties}
           members={members}
+          assigneeId={
+            typeof row.properties.assignee === 'string' ? row.properties.assignee : null
+          }
           readOnly={readOnly}
           variant="sidebar"
         />
-      )}
+      </div>
     </aside>
-  )
-}
-
-function SidebarTab({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs tracking-dashboard transition-colors',
-        active
-          ? 'bg-white/[0.08] text-text-emphasis'
-          : 'text-text-primary/50 hover:bg-white/[0.04] hover:text-text-primary/75',
-      )}
-    >
-      {children}
-    </button>
   )
 }

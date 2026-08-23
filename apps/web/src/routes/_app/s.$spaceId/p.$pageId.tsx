@@ -158,13 +158,20 @@ function SyncedPageEditor({
           <AiPanel
             editor={editor}
             pageTitle={title || shellTitle}
+            spaceId={spaceId}
+            pageId={pageId}
             onClose={() => setAiOpen(false)}
           />
         ) : null
       }
     >
       <EditorShell connectionStatus={connectionStatus} readOnly={!canEdit}>
-        <EditorAiProvider editor={editor} pageTitle={title || shellTitle}>
+        <EditorAiProvider
+          editor={editor}
+          pageTitle={title || shellTitle}
+          spaceId={spaceId}
+          pageId={pageId}
+        >
           <EditorPage
             editor={editor}
             title={title || shellTitle}

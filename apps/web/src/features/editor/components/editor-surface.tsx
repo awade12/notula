@@ -45,7 +45,7 @@ export function EditorSurface({
   const { data: settings } = useAiSettings()
   const flags = mergeAiFeatureFlags(settings?.featureFlags)
   const ghostEnabled = canEdit && Boolean(settings?.hasApiKey) && flags.inlineGhostCompletion
-  useGhostCompletion(editor, pageTitle, ghostEnabled)
+  useGhostCompletion(editor, pageTitle, spaceId, pageId, ghostEnabled)
 
   const slashAiOptions =
     ai && flags.slashCommands

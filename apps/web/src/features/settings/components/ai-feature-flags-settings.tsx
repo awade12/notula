@@ -52,6 +52,11 @@ const FLAG_ROWS: Array<{
     label: 'Inline ghost completion',
     description: 'Gray inline suggestion at your cursor while typing. Tab to accept, Esc to dismiss — local only until accepted.',
   },
+  {
+    key: 'teamspaceAsk',
+    label: 'Ask teamspace',
+    description: 'Optional chat over notes and project tasks. Opens with ⌘⇧K or from search — off by default.',
+  },
 ]
 
 export function AiFeatureFlagsSettings({ flags }: AiFeatureFlagsSettingsProps) {

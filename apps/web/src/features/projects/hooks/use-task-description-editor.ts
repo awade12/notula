@@ -66,8 +66,13 @@ export function useTaskDescriptionEditor({
       return
     }
 
-    lastCommittedRef.current = nextSerialized
+    if (commitTimeoutRef.current) {
+      window.clearTimeout(commitTimeoutRef.current)
+      commitTimeoutRef.current = null
+    }
+
     editor.replaceBlocks(editor.document, nextBlocks)
+    lastCommittedRef.current = serializeProjectTaskDescription(editor.document)
   }, [editor, value])
 
   useEffect(() => {

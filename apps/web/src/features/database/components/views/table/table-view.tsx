@@ -35,6 +35,7 @@ type TableViewProps = {
   onRenameFocusDone?: () => void
   compact?: boolean
   readOnly?: boolean
+  onOpenRow?: (rowId: string) => void
 }
 
 const columnHelper = legacyCreateColumnHelper<DatabaseRow>()
@@ -55,6 +56,7 @@ export function TableView({
   onRenameFocusDone,
   compact = false,
   readOnly = false,
+  onOpenRow,
 }: TableViewProps) {
   const updateCell = useUpdateCell(spaceId, databaseId)
   const createRow = useCreateRow(spaceId, databaseId)
@@ -197,7 +199,21 @@ export function TableView({
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="group/row">
+              <tr
+                key={row.id}
+                className={cn('group/row', onOpenRow && 'cursor-pointer')}
+                onClick={
+                  onOpenRow
+                    ? (event) => {
+                        const target = event.target as HTMLElement
+                        if (target.closest('button, input, textarea, select, a, [role="combobox"]')) {
+                          return
+                        }
+                        onOpenRow(row.original.id)
+                      }
+                    : undefined
+                }
+              >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}

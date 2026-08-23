@@ -8,7 +8,7 @@ const bytea = customType<{ data: Buffer; driverData: string }>({
   },
 })
 
-const embeddingVector = customType<{ data: number[] | null; driverData: string | null }>({
+export const embeddingVector = customType<{ data: number[] | null; driverData: string | null }>({
   dataType() {
     return 'vector(1536)'
   },

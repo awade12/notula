@@ -5,6 +5,8 @@ function isBlockArray(value: unknown): value is PartialBlock[] {
 }
 
 export function parseProjectTaskDescription(value: unknown): PartialBlock[] | undefined {
+  if (Array.isArray(value) && isBlockArray(value)) return value
+
   if (typeof value !== 'string' || !value.trim()) return undefined
 
   if (value.startsWith('[')) {

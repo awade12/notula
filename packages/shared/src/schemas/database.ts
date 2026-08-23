@@ -95,7 +95,12 @@ export const PROJECT_BOARD_SCHEMA: DatabaseSchema = {
       type: 'number',
     },
     { id: PROJECT_BOARD_PROPERTY_IDS.dueDate, name: 'Due date', type: 'text' },
-    { id: PROJECT_BOARD_PROPERTY_IDS.assignee, name: 'Assignee', type: 'text' },
+    {
+      id: PROJECT_BOARD_PROPERTY_IDS.assignee,
+      name: 'Assignees',
+      type: 'relation',
+      config: { limit: 8 },
+    },
     {
       id: PROJECT_BOARD_PROPERTY_IDS.linkedNote,
       name: 'Note',

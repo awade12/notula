@@ -65,7 +65,7 @@ export function ProjectBoardSettingsLayout({ spaceId, boardId }: ProjectBoardSet
                 Board settings
               </h1>
               <p className="mx-auto mt-1.5 max-w-2xl text-sm tracking-dashboard text-text-primary lg:mx-0">
-                Labels, milestones, and public sharing for {database.title}.
+                Status columns, labels, milestones, sharing, and board deletion for {database.title}.
               </p>
             </div>
           </header>

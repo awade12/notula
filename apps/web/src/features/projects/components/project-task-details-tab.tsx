@@ -3,7 +3,9 @@ import type { PropertyDefinition } from '@notesapp/shared'
 import type { DatabaseRow } from '@/features/database/types'
 import type { FlatPage } from '@/features/workspace/lib/build-tree'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
+import type { ConnectionStatus } from '@/features/editor/types'
 import { PageTitleInput } from '@/features/editor/components/page-title-input'
+import { EditorConnectionNotice } from '@/features/editor/components/editor-connection-notice'
 import { useUpdateCell } from '@/features/database/hooks/use-update-cell'
 import { ProjectTaskDescriptionEditor } from './project-task-description-editor'
 import { ProjectTaskDetailsSidebar } from './project-task-details-sidebar'
@@ -23,6 +25,9 @@ type ProjectTaskDetailsTabProps = {
   members: SpaceMember[]
   taskTitle: string
   taskContext: string
+  linkedPageId?: string
+  linkedPageTitle?: string
+  connectionStatus?: ConnectionStatus
   readOnly?: boolean
   onClose: () => void
 }
@@ -53,6 +58,9 @@ export function ProjectTaskDetailsTab({
   members,
   taskTitle,
   taskContext,
+  linkedPageId,
+  linkedPageTitle,
+  connectionStatus = 'synced',
   readOnly = false,
   onClose,
 }: ProjectTaskDetailsTabProps) {
@@ -108,6 +116,7 @@ export function ProjectTaskDetailsTab({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-2">
+          <EditorConnectionNotice connectionStatus={connectionStatus} />
           <ProjectTaskDescriptionEditor
             spaceId={spaceId}
             rowId={row.id}
@@ -142,6 +151,8 @@ export function ProjectTaskDetailsTab({
         members={members}
         taskTitle={taskTitle}
         taskContext={taskContext}
+        linkedPageId={linkedPageId}
+        linkedPageTitle={linkedPageTitle}
         schemaProperties={schemaProperties}
         updatedLabel={updatedLabel}
         readOnly={readOnly}

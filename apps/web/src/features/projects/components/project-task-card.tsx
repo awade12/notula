@@ -5,7 +5,9 @@ import { normalizeMultiSelectValue } from '@notesapp/shared'
 import type { DatabaseRow } from '@/features/database/types'
 import type { FlatPage } from '@/features/workspace/lib/build-tree'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
-import { useDeleteRow } from '@/features/database/hooks/use-update-cell'
+import { useDeleteRow, useUpdateCell } from '@/features/database/hooks/use-update-cell'
+import { useDuplicateTask, useMoveTaskToBoard } from '@/features/projects/hooks/use-task-actions'
+import { useProjectBoards } from '@/features/projects/hooks/use-project-boards'
 import { selectOptionClassName } from '@/features/database/lib/select-option-styles'
 import {
   formatTaskDueDate,
@@ -30,13 +32,14 @@ type ProjectTaskCardProps = {
   labelProperty?: PropertyDefinition
   milestoneProperty?: PropertyDefinition
   priorityProperty?: PropertyDefinition
+  groupProperty?: PropertyDefinition
   linkedNoteProperty?: PropertyDefinition
   pages: FlatPage[]
   members: SpaceMember[]
   selected?: boolean
   readOnly?: boolean
   isDragging?: boolean
-  onOpen: () => void
+  onOpen: (taskId?: string) => void
   onDragStart: (taskId: string) => void
   onDragEnd: () => void
   onDragOver: (event: { clientY: number }, element: HTMLElement) => void
@@ -71,6 +74,7 @@ export function ProjectTaskCard({
   labelProperty,
   milestoneProperty,
   priorityProperty,
+  groupProperty,
   linkedNoteProperty,
   pages,
   members,
@@ -85,10 +89,35 @@ export function ProjectTaskCard({
 }: ProjectTaskCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const deleteRow = useDeleteRow(spaceId, boardId)
+  const duplicateTask = useDuplicateTask(spaceId, boardId)
+  const moveTask = useMoveTaskToBoard(spaceId, boardId)
+  const updateCell = useUpdateCell(spaceId, boardId)
+  const { data: boards = [] } = useProjectBoards(spaceId)
   const didDragRef = useRef(false)
+
+  const doneStatusId =
+    groupProperty?.type === 'select'
+      ? (groupProperty.config?.options?.find((option) => option.id === 'done')?.id ?? 'done')
+      : 'done'
+
   const rowMenu = useProjectTaskRowMenu({
     readOnly,
-    onOpen,
+    currentBoardId: boardId,
+    boards,
+    onOpen: () => onOpen(),
+    onDuplicate: () => {
+      void duplicateTask.mutateAsync(row.id).then((result) => onOpen(result.row.id))
+    },
+    onArchive: () => {
+      void updateCell.mutateAsync({
+        rowId: row.id,
+        propertyId: groupProperty?.id ?? 'status',
+        value: doneStatusId,
+      })
+    },
+    onMoveToBoard: (targetBoardId) => {
+      void moveTask.mutateAsync({ rowId: row.id, targetBoardId })
+    },
     onDelete: () => {
       const confirmed = window.confirm('Delete this task?')
       if (!confirmed) return

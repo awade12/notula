@@ -24,6 +24,7 @@ type ProjectKanbanColumnProps = {
   labelProperty?: PropertyDefinition
   milestoneProperty?: PropertyDefinition
   priorityProperty?: PropertyDefinition
+  groupProperty?: PropertyDefinition
   linkedNoteProperty?: PropertyDefinition
   pages: FlatPage[]
   members: SpaceMember[]
@@ -65,6 +66,7 @@ export function ProjectKanbanColumn({
   labelProperty,
   milestoneProperty,
   priorityProperty,
+  groupProperty,
   linkedNoteProperty,
   pages,
   members,
@@ -177,6 +179,7 @@ export function ProjectKanbanColumn({
                 labelProperty={labelProperty}
                 milestoneProperty={milestoneProperty}
                 priorityProperty={priorityProperty}
+                groupProperty={groupProperty}
                 linkedNoteProperty={linkedNoteProperty}
                 pages={pages}
                 members={members}

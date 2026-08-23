@@ -33,5 +33,20 @@ export function useDatabaseActions(spaceId: string, databaseId: string) {
     onSuccess: invalidate,
   })
 
-  return { rename, updateIcon }
+  const remove = useMutation({
+    mutationFn: async () => {
+      const response = await apiFetch(`/api/spaces/${spaceId}/databases/${databaseId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete board')
+      return response.json()
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['database', spaceId, databaseId] })
+      void queryClient.invalidateQueries({ queryKey: ['databases', spaceId] })
+      void queryClient.invalidateQueries({ queryKey: ['project-boards', spaceId] })
+    },
+  })
+
+  return { rename, updateIcon, remove }
 }

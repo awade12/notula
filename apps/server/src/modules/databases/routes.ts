@@ -1,3 +1,4 @@
+import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
@@ -9,6 +10,7 @@ import {
   sortRuleSchema,
 } from '@notesapp/shared'
 import type { Db } from '../../db/client'
+import { databaseRows } from '../../db/schema/databases'
 import { broadcastDatabaseChanged } from '../../collab/broadcast'
 import {
   createRequireSpaceMember,
@@ -19,6 +21,9 @@ import * as schemaService from './schema.service'
 import * as databasesService from './service'
 import * as viewsService from './views.service'
 import * as publicBoardsService from '../public-boards/service'
+import * as taskActivityService from './task-activity.service'
+import * as notificationsService from '../notifications/service'
+import { readTaskTitle } from '../search/task-search'
 
 const createRowSchema = z.object({
   properties: z.record(z.string(), z.unknown()).optional(),
@@ -74,7 +79,15 @@ const updateViewBody = z.object({
   config: databaseViewConfigSchema.optional(),
 })
 
-export function createDatabasesRoutes(db: Db, collab: Hocuspocus) {
+const moveRowBoardSchema = z.object({
+  targetBoardId: z.string().min(1).max(64),
+})
+
+const taskCommentSchema = z.object({
+  body: z.string().min(1).max(4000),
+})
+
+export function createDatabasesRoutes(db: Db, collab: Hocuspocus, authSecret: string) {
   const app = new Hono<{ Variables: SpaceVariables }>()
   const requireSpaceMember = createRequireSpaceMember(db)
   const requireSpaceEditor = createRequireSpaceEditor()
@@ -376,6 +389,7 @@ export function createDatabasesRoutes(db: Db, collab: Hocuspocus) {
         databaseId,
         user.id,
         body,
+        authSecret,
       )
       return c.json({ row }, 201)
     } catch (error) {
@@ -403,6 +417,7 @@ export function createDatabasesRoutes(db: Db, collab: Hocuspocus) {
           c.req.param('rowId'),
           user.id,
           c.req.valid('json'),
+          authSecret,
         )
         return c.json(result)
       } catch (error) {
@@ -520,6 +535,152 @@ export function createDatabasesRoutes(db: Db, collab: Hocuspocus) {
       throw error
     }
   })
+
+  app.post('/:databaseId/rows/:rowId/duplicate', requireSpaceEditor, async (c) => {
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+    const databaseId = c.req.param('databaseId')
+    const rowId = c.req.param('rowId')
+    const spaceId = c.get('spaceId')
+    if (!databaseId || !rowId || !spaceId) return c.json({ error: 'Not found' }, 404)
+
+    try {
+      const row = await databasesService.duplicateRow(
+        db,
+        spaceId,
+        databaseId,
+        rowId,
+        user.id,
+        authSecret,
+      )
+      return c.json({ row })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Not found') {
+        return c.json({ error: 'Not found' }, 404)
+      }
+      throw error
+    }
+  })
+
+  app.post(
+    '/:databaseId/rows/:rowId/move-board',
+    requireSpaceEditor,
+    zValidator('json', moveRowBoardSchema),
+    async (c) => {
+      const user = c.get('user')
+      if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+      const databaseId = c.req.param('databaseId')
+      const rowId = c.req.param('rowId')
+      const spaceId = c.get('spaceId')
+      if (!databaseId || !rowId || !spaceId) return c.json({ error: 'Not found' }, 404)
+
+      try {
+        const result = await databasesService.moveRowToBoard(
+          db,
+          spaceId,
+          databaseId,
+          rowId,
+          c.req.valid('json').targetBoardId,
+          user.id,
+        )
+        return c.json(result)
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Not found') return c.json({ error: 'Not found' }, 404)
+          if (error.message === 'Target must be a project board') {
+            return c.json({ error: error.message }, 400)
+          }
+        }
+        throw error
+      }
+    },
+  )
+
+  app.get('/:databaseId/rows/:rowId/activity', async (c) => {
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+    const databaseId = c.req.param('databaseId')
+    const rowId = c.req.param('rowId')
+    const spaceId = c.get('spaceId')
+    if (!databaseId || !rowId || !spaceId) return c.json({ error: 'Not found' }, 404)
+
+    try {
+      await databasesService.getDatabase(db, spaceId, databaseId, user.id)
+      const activity = await taskActivityService.listTaskActivity(db, spaceId, rowId)
+      return c.json({ activity })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Not found') {
+        return c.json({ error: 'Not found' }, 404)
+      }
+      throw error
+    }
+  })
+
+  app.post(
+    '/:databaseId/rows/:rowId/activity',
+    requireSpaceEditor,
+    zValidator('json', taskCommentSchema),
+    async (c) => {
+      const user = c.get('user')
+      if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+      const databaseId = c.req.param('databaseId')
+      const rowId = c.req.param('rowId')
+      const spaceId = c.get('spaceId')
+      if (!databaseId || !rowId || !spaceId) return c.json({ error: 'Not found' }, 404)
+
+      try {
+        await databasesService.getDatabase(db, spaceId, databaseId, user.id)
+        const actorName =
+          typeof user.name === 'string' && user.name.trim() ? user.name.trim() : 'Someone'
+        const result = await taskActivityService.addTaskComment(
+          db,
+          spaceId,
+          rowId,
+          user.id,
+          actorName,
+          c.req.valid('json').body,
+        )
+
+        const [row] = await db
+          .select({ properties: databaseRows.properties })
+          .from(databaseRows)
+          .where(and(eq(databaseRows.id, rowId), eq(databaseRows.spaceId, spaceId)))
+          .limit(1)
+
+        if (row) {
+          const properties = row.properties as Record<string, unknown>
+          const assigneeId = properties.assignee
+          const taskTitle = readTaskTitle(properties)
+
+          if (typeof assigneeId === 'string' && assigneeId !== user.id) {
+            await notificationsService.createTaskCommentNotifications(db, {
+              actorId: user.id,
+              actorName,
+              spaceId,
+              boardId: databaseId,
+              rowId,
+              taskTitle,
+              recipientUserIds: [assigneeId],
+            })
+          }
+        }
+
+        return c.json(result)
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Not found') return c.json({ error: 'Not found' }, 404)
+          if (error.message === 'Comment cannot be empty') {
+            return c.json({ error: error.message }, 400)
+          }
+        }
+        throw error
+      }
+    },
+  )
 
   return app
 }

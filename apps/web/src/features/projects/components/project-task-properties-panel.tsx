@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import type { PropertyDefinition } from '@notesapp/shared'
 import type { DatabaseRow } from '@/features/database/types'
 import type { FlatPage } from '@/features/workspace/lib/build-tree'
@@ -12,6 +11,10 @@ import { ProjectTaskDocumentationField } from './project-task-documentation-fiel
 import { ProjectTaskDueDateField } from './project-task-due-date-field'
 import { ProjectTaskMultiSelectField } from './project-task-multi-select-field'
 import { ProjectTaskNumberField } from './project-task-number-field'
+import {
+  ProjectTaskPropertyRow,
+  ProjectTaskPropertySection,
+} from './project-task-property-row'
 import { ProjectTaskSelectField } from './project-task-select-field'
 
 type ProjectTaskPropertiesPanelProps = {
@@ -30,6 +33,8 @@ type ProjectTaskPropertiesPanelProps = {
   readOnly?: boolean
   onClose: () => void
 }
+
+const FIELD_VARIANT = 'inline' as const
 
 export function ProjectTaskPropertiesPanel({
   spaceId,
@@ -58,165 +63,183 @@ export function ProjectTaskPropertiesPanel({
     onClose()
   }
 
+  const hasWorkflowExtras = Boolean(labelProperty || priorityProperty || milestoneProperty)
+  const hasPlanningExtras = Boolean(estimateProperty)
+
   return (
-    <>
-      <div className="space-y-5 p-4">
-        <Field label="Status">
-          <ProjectTaskSelectField
-            property={groupProperty}
-            value={row.properties[groupProperty.id]}
-            readOnly={readOnly}
-            emptyLabel="No status"
-            onCommit={(value) =>
-              void updateCell.mutateAsync({
-                rowId: row.id,
-                propertyId: groupProperty.id,
-                value,
-              })
-            }
-          />
-        </Field>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="scrollbar-none flex-1 space-y-4 px-3 py-3">
+        <ProjectTaskPropertySection title={hasWorkflowExtras ? 'Workflow' : undefined}>
+          <ProjectTaskPropertyRow label="Status">
+            <ProjectTaskSelectField
+              property={groupProperty}
+              value={row.properties[groupProperty.id]}
+              readOnly={readOnly}
+              emptyLabel="No status"
+              variant={FIELD_VARIANT}
+              onCommit={(value) =>
+                void updateCell.mutateAsync({
+                  rowId: row.id,
+                  propertyId: groupProperty.id,
+                  value,
+                })
+              }
+            />
+          </ProjectTaskPropertyRow>
 
-        {labelProperty ? (
-          <Field label="Labels">
-            {labelProperty.type === 'multi_select' ? (
-              <ProjectTaskMultiSelectField
-                property={labelProperty}
-                value={row.properties[labelProperty.id]}
-                readOnly={readOnly}
-                emptyLabel="No labels"
-                onCommit={(value) =>
-                  void updateCell.mutateAsync({
-                    rowId: row.id,
-                    propertyId: labelProperty.id,
-                    value,
-                  })
-                }
-              />
-            ) : (
+          {labelProperty ? (
+            <ProjectTaskPropertyRow label="Labels" align="start" valueAlign="start">
+              {labelProperty.type === 'multi_select' ? (
+                <ProjectTaskMultiSelectField
+                  property={labelProperty}
+                  value={row.properties[labelProperty.id]}
+                  readOnly={readOnly}
+                  emptyLabel="Add labels"
+                  variant={FIELD_VARIANT}
+                  onCommit={(value) =>
+                    void updateCell.mutateAsync({
+                      rowId: row.id,
+                      propertyId: labelProperty.id,
+                      value,
+                    })
+                  }
+                />
+              ) : (
+                <ProjectTaskSelectField
+                  property={labelProperty}
+                  value={row.properties[labelProperty.id]}
+                  readOnly={readOnly}
+                  emptyLabel="No label"
+                  variant={FIELD_VARIANT}
+                  onCommit={(value) =>
+                    void updateCell.mutateAsync({
+                      rowId: row.id,
+                      propertyId: labelProperty.id,
+                      value,
+                    })
+                  }
+                />
+              )}
+            </ProjectTaskPropertyRow>
+          ) : null}
+
+          {priorityProperty ? (
+            <ProjectTaskPropertyRow label="Priority">
               <ProjectTaskSelectField
-                property={labelProperty}
-                value={row.properties[labelProperty.id]}
+                property={priorityProperty}
+                value={row.properties[priorityProperty.id]}
                 readOnly={readOnly}
-                emptyLabel="No label"
+                emptyLabel="No priority"
+                variant={FIELD_VARIANT}
                 onCommit={(value) =>
                   void updateCell.mutateAsync({
                     rowId: row.id,
-                    propertyId: labelProperty.id,
+                    propertyId: priorityProperty.id,
                     value,
                   })
                 }
               />
-            )}
-          </Field>
-        ) : null}
+            </ProjectTaskPropertyRow>
+          ) : null}
 
-        {priorityProperty ? (
-          <Field label="Priority">
-            <ProjectTaskSelectField
-              property={priorityProperty}
-              value={row.properties[priorityProperty.id]}
+          {milestoneProperty ? (
+            <ProjectTaskPropertyRow label="Milestone">
+              <ProjectTaskSelectField
+                property={milestoneProperty}
+                value={row.properties[milestoneProperty.id]}
+                readOnly={readOnly}
+                emptyLabel="No milestone"
+                variant={FIELD_VARIANT}
+                onCommit={(value) =>
+                  void updateCell.mutateAsync({
+                    rowId: row.id,
+                    propertyId: milestoneProperty.id,
+                    value,
+                  })
+                }
+              />
+            </ProjectTaskPropertyRow>
+          ) : null}
+        </ProjectTaskPropertySection>
+
+        <ProjectTaskPropertySection title={hasPlanningExtras ? 'Planning' : undefined}>
+          <ProjectTaskPropertyRow label="Assignee">
+            <ProjectTaskAssigneeField
+              value={row.properties.assignee}
+              members={members}
               readOnly={readOnly}
-              emptyLabel="No priority"
+              variant={FIELD_VARIANT}
+              onCommit={(userId) =>
+                void updateCell.mutateAsync({
+                  rowId: row.id,
+                  propertyId: 'assignee',
+                  value: userId ?? '',
+                })
+              }
+            />
+          </ProjectTaskPropertyRow>
+
+          <ProjectTaskPropertyRow label="Due date">
+            <ProjectTaskDueDateField
+              value={row.properties.due_date}
+              readOnly={readOnly}
+              variant={FIELD_VARIANT}
               onCommit={(value) =>
                 void updateCell.mutateAsync({
                   rowId: row.id,
-                  propertyId: priorityProperty.id,
+                  propertyId: 'due_date',
                   value,
                 })
               }
             />
-          </Field>
-        ) : null}
+          </ProjectTaskPropertyRow>
 
-        {milestoneProperty ? (
-          <Field label="Milestone">
-            <ProjectTaskSelectField
-              property={milestoneProperty}
-              value={row.properties[milestoneProperty.id]}
-              readOnly={readOnly}
-              emptyLabel="No milestone"
-              onCommit={(value) =>
-                void updateCell.mutateAsync({
-                  rowId: row.id,
-                  propertyId: milestoneProperty.id,
-                  value,
-                })
-              }
-            />
-          </Field>
-        ) : null}
-
-        <Field label="Assignee">
-          <ProjectTaskAssigneeField
-            value={row.properties.assignee}
-            members={members}
-            readOnly={readOnly}
-            onCommit={(userId) =>
-              void updateCell.mutateAsync({
-                rowId: row.id,
-                propertyId: 'assignee',
-                value: userId ?? '',
-              })
-            }
-          />
-        </Field>
-
-        <Field label="Due date">
-          <ProjectTaskDueDateField
-            value={row.properties.due_date}
-            readOnly={readOnly}
-            onCommit={(value) =>
-              void updateCell.mutateAsync({
-                rowId: row.id,
-                propertyId: 'due_date',
-                value,
-              })
-            }
-          />
-        </Field>
-
-        {estimateProperty ? (
-          <Field label="Estimate">
-            <ProjectTaskNumberField
-              value={row.properties[estimateProperty.id]}
-              readOnly={readOnly}
-              placeholder="Points"
-              suffix="pts"
-              onCommit={(value) =>
-                void updateCell.mutateAsync({
-                  rowId: row.id,
-                  propertyId: estimateProperty.id,
-                  value,
-                })
-              }
-            />
-          </Field>
-        ) : null}
+          {estimateProperty ? (
+            <ProjectTaskPropertyRow label="Estimate">
+              <ProjectTaskNumberField
+                value={row.properties[estimateProperty.id]}
+                readOnly={readOnly}
+                placeholder="—"
+                suffix="pts"
+                variant={FIELD_VARIANT}
+                onCommit={(value) =>
+                  void updateCell.mutateAsync({
+                    rowId: row.id,
+                    propertyId: estimateProperty.id,
+                    value,
+                  })
+                }
+              />
+            </ProjectTaskPropertyRow>
+          ) : null}
+        </ProjectTaskPropertySection>
 
         {linkedNoteProperty ? (
-          <Field label="Documentation">
-            <ProjectTaskDocumentationField
-              spaceId={spaceId}
-              value={row.properties[linkedNoteProperty.id]}
-              pages={pages}
-              readOnly={readOnly}
-              onCommit={(value) =>
-                void updateCell.mutateAsync({
-                  rowId: row.id,
-                  propertyId: linkedNoteProperty.id,
-                  value,
-                })
-              }
-            />
-          </Field>
+          <ProjectTaskPropertySection title="Links">
+            <ProjectTaskPropertyRow label="Documentation" align="start">
+              <ProjectTaskDocumentationField
+                spaceId={spaceId}
+                value={row.properties[linkedNoteProperty.id]}
+                pages={pages}
+                readOnly={readOnly}
+                variant={FIELD_VARIANT}
+                onCommit={(value) =>
+                  void updateCell.mutateAsync({
+                    rowId: row.id,
+                    propertyId: linkedNoteProperty.id,
+                    value,
+                  })
+                }
+              />
+            </ProjectTaskPropertyRow>
+          </ProjectTaskPropertySection>
         ) : null}
       </div>
 
       {!readOnly ? (
-        <div className="mt-auto border-t border-border/60 p-4">
+        <div className="shrink-0 border-t border-border/60 px-3 py-3">
           {updatedLabel ? (
-            <p className="mb-3 text-[10px] tracking-wide text-text-primary/30">
+            <p className="mb-2 text-[10px] tracking-wide text-text-primary/30">
               Updated {updatedLabel}
             </p>
           ) : null}
@@ -231,21 +254,10 @@ export function ProjectTaskPropertiesPanel({
           </button>
         </div>
       ) : updatedLabel ? (
-        <div className="mt-auto border-t border-border/60 p-4">
+        <div className="shrink-0 border-t border-border/60 px-3 py-3">
           <p className="text-[10px] tracking-wide text-text-primary/30">Updated {updatedLabel}</p>
         </div>
       ) : null}
-    </>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-text-primary/40">
-        {label}
-      </p>
-      {children}
     </div>
   )
 }

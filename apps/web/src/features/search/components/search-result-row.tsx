@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import type { SearchResult } from '../hooks/use-search'
+import { isSearchTaskResult, type SearchResult } from '../hooks/use-search'
 
 type SearchResultRowProps = {
   result: SearchResult
@@ -7,7 +7,15 @@ type SearchResultRowProps = {
   onSelect: () => void
 }
 
+function matchTypeLabel(matchType: SearchResult['matchType']) {
+  if (matchType === 'title') return 'Title'
+  if (matchType === 'semantic') return 'Semantic'
+  return 'Content'
+}
+
 export function SearchResultRow({ result, isActive, onSelect }: SearchResultRowProps) {
+  const isTask = isSearchTaskResult(result)
+
   return (
     <button
       type="button"
@@ -20,13 +28,12 @@ export function SearchResultRow({ result, isActive, onSelect }: SearchResultRowP
       <div className="flex items-center gap-2">
         <span className="truncate text-sm font-medium text-text-primary">{result.title}</span>
         <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-text-primary/50">
-          {result.matchType === 'title'
-            ? 'Title'
-            : result.matchType === 'semantic'
-              ? 'Semantic'
-              : 'Content'}
+          {isTask ? 'Task' : matchTypeLabel(result.matchType)}
         </span>
       </div>
+      {isTask ? (
+        <span className="truncate text-[11px] text-text-primary/45">{result.boardTitle}</span>
+      ) : null}
       {result.snippet ? (
         <span className="line-clamp-2 text-xs text-text-primary/60">{result.snippet}</span>
       ) : null}

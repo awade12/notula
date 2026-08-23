@@ -149,10 +149,12 @@ export function usePageActions(spaceId: string) {
       parentId = null,
       title,
       kind = 'note',
+      markdown,
     }: {
       parentId?: string | null
       title?: string
       kind?: PageKind
+      markdown?: string
     }) => {
       const response = await apiFetch(`/api/spaces/${spaceId}/pages`, {
         method: 'POST',
@@ -160,6 +162,7 @@ export function usePageActions(spaceId: string) {
           parentId,
           title,
           kind,
+          markdown,
         }),
       })
       if (!response.ok) {

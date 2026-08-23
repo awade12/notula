@@ -12,7 +12,13 @@ import { useAiSettings } from '@/features/settings/hooks/use-ai-settings'
 import { mergeAiFeatureFlags } from '../lib/feature-flags'
 import { streamAiCompletion } from '../lib/stream-ai-completion'
 
-export function useGhostCompletion(editor: NotesEditor, pageTitle: string, enabled: boolean) {
+export function useGhostCompletion(
+  editor: NotesEditor,
+  pageTitle: string,
+  spaceId: string,
+  pageId: string,
+  enabled: boolean,
+) {
   const { data: settings } = useAiSettings()
   const flags = mergeAiFeatureFlags(settings?.featureFlags)
   const active = enabled && flags.inlineGhostCompletion && Boolean(settings?.hasApiKey)
@@ -44,8 +50,11 @@ export function useGhostCompletion(editor: NotesEditor, pageTitle: string, enabl
     void streamAiCompletion(
       {
         prompt: prefix,
+        spaceId,
+        pageId,
         pageTitle,
         template: 'ghost',
+        includeWorkspaceContext: false,
         maxTokens: 48,
         model: settings?.defaultModel,
       },
@@ -67,7 +76,7 @@ export function useGhostCompletion(editor: NotesEditor, pageTitle: string, enabl
           setGhostCompletionState(editor, { isLoading: false })
         }
       })
-  }, [active, clearSuggestion, editor, pageTitle, settings?.defaultModel])
+  }, [active, clearSuggestion, editor, pageId, pageTitle, settings?.defaultModel, spaceId])
 
   useEditorChange(() => {
     if (!active) return

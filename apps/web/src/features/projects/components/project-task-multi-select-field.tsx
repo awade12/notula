@@ -1,20 +1,23 @@
 import { useRef, useState } from 'react'
-import type { PropertyDefinition, SelectOption } from '@notesapp/shared'
+import type { PropertyDefinition } from '@notesapp/shared'
 import { normalizeMultiSelectValue } from '@notesapp/shared'
-import { selectOptionClassName } from '@/features/database/lib/select-option-styles'
-import { dbSelectPill } from '@/features/database/lib/database-classes'
 import { WorkspaceIcon } from '@/features/workspace/components/workspace-icon'
 import { iconSize } from '@/features/workspace/lib/workspace-icon-sizes'
 import { cn } from '@/lib/cn'
-import { taskCheckIcon, taskChevronDownIcon } from '../lib/project-icon-pack'
-import { projectPanelFieldTrigger, projectPanelOption } from '../lib/project-panel-classes'
+import { taskChevronDownIcon } from '../lib/project-icon-pack'
+import { projectPanelInlineChevron, projectPanelTriggerClass, type ProjectPanelFieldVariant } from '../lib/project-panel-classes'
+import { ProjectPanelLabelPreview } from './project-panel-label-preview'
 import { ProjectPanelPopover } from './project-panel-popover'
+import { ProjectPanelSelectMenu } from './project-panel-select-menu'
+import { ProjectPanelSelectOption } from './project-panel-select-option'
+import { ProjectPanelSelectPill } from './project-panel-select-pill'
 
 type ProjectTaskMultiSelectFieldProps = {
   property: PropertyDefinition
   value: unknown
   readOnly?: boolean
   emptyLabel?: string
+  variant?: ProjectPanelFieldVariant
   onCommit: (value: unknown) => void
 }
 
@@ -22,7 +25,8 @@ export function ProjectTaskMultiSelectField({
   property,
   value,
   readOnly = false,
-  emptyLabel = 'No labels',
+  emptyLabel = 'Add labels',
+  variant = 'field',
   onCommit,
 }: ProjectTaskMultiSelectFieldProps) {
   const [open, setOpen] = useState(false)
@@ -44,25 +48,40 @@ export function ProjectTaskMultiSelectField({
         ref={triggerRef}
         type="button"
         disabled={readOnly}
+        data-open={open}
         onClick={() => {
           if (!readOnly) setOpen((currentOpen) => !currentOpen)
         }}
         className={cn(
-          projectPanelFieldTrigger,
-          'min-h-9 h-auto flex-wrap gap-1 py-1.5',
+          projectPanelTriggerClass(variant),
+          variant === 'field' && 'min-h-9 h-auto flex-wrap gap-1 py-1.5',
+          variant === 'inline' && 'relative h-auto w-full min-w-0 items-start gap-1',
           selectedOptions.length === 0 && 'text-text-primary/40',
         )}
       >
         {selectedOptions.length > 0 ? (
-          selectedOptions.map((option) => <SelectPill key={option.id} option={option} />)
+          variant === 'inline' ? (
+            <ProjectPanelLabelPreview options={selectedOptions} />
+          ) : (
+            <span className="flex max-w-full flex-wrap items-center gap-1">
+              {selectedOptions.map((option) => (
+                <ProjectPanelSelectPill key={option.id} option={option} size="compact" />
+              ))}
+            </span>
+          )
         ) : (
-          <span>{emptyLabel}</span>
+          <span className="text-xs">{emptyLabel}</span>
         )}
         {!readOnly ? (
           <WorkspaceIcon
             icon={taskChevronDownIcon}
             size={iconSize.section}
-            className="ml-auto shrink-0 text-text-primary/40"
+            className={cn(
+              'shrink-0',
+              variant === 'inline'
+                ? cn(projectPanelInlineChevron, 'mt-0.5')
+                : 'ml-auto text-text-primary/40',
+            )}
           />
         ) : null}
       </button>
@@ -71,59 +90,38 @@ export function ProjectTaskMultiSelectField({
         open={open}
         anchorRef={triggerRef}
         onClose={() => setOpen(false)}
-        minWidth={240}
+        minWidth={232}
+        align={variant === 'inline' ? 'end' : 'start'}
+        className="p-0"
       >
-        {options.map((option) => (
-          <OptionRow
-            key={option.id}
-            label={option.label}
-            selected={selectedIds.includes(option.id)}
-            option={option}
-            onSelect={() => toggleOption(option.id)}
-          />
-        ))}
-        {selectedIds.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => {
-              onCommit([])
-              setOpen(false)
-            }}
-            className="mt-1 w-full rounded-md px-2 py-1.5 text-left text-xs text-text-primary/45 transition-colors hover:bg-white/[0.08] hover:text-text-primary/70 active:bg-white/[0.12]"
-          >
-            Clear all
-          </button>
-        ) : null}
+        <ProjectPanelSelectMenu
+          footer={
+            selectedIds.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onCommit([])
+                  setOpen(false)
+                }}
+                className="w-full rounded-md px-2 py-1.5 text-left text-xs text-text-primary/45 transition-colors hover:bg-white/[0.04] hover:text-text-primary/70"
+              >
+                Clear all
+              </button>
+            ) : null
+          }
+        >
+          {options.map((option) => (
+            <ProjectPanelSelectOption
+              key={option.id}
+              label={option.label}
+              selected={selectedIds.includes(option.id)}
+              option={option}
+              mode="multi"
+              onSelect={() => toggleOption(option.id)}
+            />
+          ))}
+        </ProjectPanelSelectMenu>
       </ProjectPanelPopover>
     </>
-  )
-}
-
-function SelectPill({ option }: { option: SelectOption }) {
-  return (
-    <span className={cn(dbSelectPill, 'truncate', selectOptionClassName(option.color))}>
-      {option.label}
-    </span>
-  )
-}
-
-function OptionRow({
-  label,
-  selected,
-  option,
-  onSelect,
-}: {
-  label: string
-  selected: boolean
-  option?: SelectOption
-  onSelect: () => void
-}) {
-  return (
-    <button type="button" onClick={onSelect} className={projectPanelOption(selected)}>
-      <span className="flex size-4 shrink-0 items-center justify-center">
-        {selected ? <WorkspaceIcon icon={taskCheckIcon} size={iconSize.section} /> : null}
-      </span>
-      {option ? <SelectPill option={option} /> : <span>{label}</span>}
-    </button>
   )
 }
