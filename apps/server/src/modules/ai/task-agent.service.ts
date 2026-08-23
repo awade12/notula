@@ -16,6 +16,10 @@ export const taskAiCreateTaskSchema = z.object({
   assigneeIds: z.array(z.string()).optional(),
   assigneeId: z.string().nullable().optional(),
   labelIds: z.array(z.string()).optional(),
+  milestone: z.string().optional(),
+  priority: z.string().optional(),
+  estimate: z.number().nullable().optional(),
+  dueDate: z.string().optional(),
 })
 
 export const taskAiResponseSchema = z.object({
@@ -83,7 +87,11 @@ Respond with ONLY valid JSON (no markdown fences, no commentary outside JSON):
       "description": "optional markdown",
       "status": "option id",
       "assigneeIds": ["member userId"],
-      "labelIds": ["option id"]
+      "labelIds": ["option id"],
+      "milestone": "option id",
+      "priority": "option id",
+      "estimate": 3,
+      "dueDate": "YYYY-MM-DD"
     }
   ]
 }

@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { normalizeAssigneeValue } from '@notesapp/shared'
 import type { Db } from '../../db/client'
 import type { Env } from '../../env'
 import type { SessionVariables } from '../../middleware/session'
@@ -11,7 +10,7 @@ import { buildCompletionMessages, AI_COMPLETION_TEMPLATES } from './completion.s
 import { buildRetrievalQuery, retrieveAiWorkspaceContext } from './retrieval'
 import { isLaunchBlockerQuery } from './retrieval-query'
 import { hydrateTaskAgentRequest } from './build-task-agent-context'
-import { runTaskAgent, taskAgentRequestSchema, taskAiPropertySchema } from './task-agent.service'
+import { runTaskAgent, taskAgentRequestSchema, taskAiCreateTaskSchema, taskAiPropertySchema } from './task-agent.service'
 import {
   buildTeamspaceChatMessages,
   teamspaceChatRequestSchema,
@@ -26,9 +25,15 @@ import { parseBoardFilterFromPrompt } from './board-filter.service'
 import { getSpaceAiDigest } from './space-digest.service'
 import * as aiThreadsService from './ai-threads.service'
 import { breakSpecIntoTasks } from './spec-to-tasks.service'
+import { breakIdeaIntoTasks, ideaChatMessageSchema } from './idea-to-tasks.service'
+import { buildAiCreateTaskProperties } from './build-ai-create-task-properties'
+import { buildTaskAiPropertiesFromSchema } from './build-task-agent-context'
 import * as databasesService from '../databases/service'
 import { pages } from '../../db/schema/pages'
-import { eq } from 'drizzle-orm'
+import { databaseRows } from '../../db/schema/databases'
+import { eq, and } from 'drizzle-orm'
+import { listSpaceMembers } from '../spaces/members.service'
+import { readTaskTitle } from '../search/task-search'
 
 const chatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -97,6 +102,74 @@ const specToTasksSchema = z.object({
   create: z.boolean().optional(),
   model: z.string().min(1).max(120).optional(),
 })
+
+const ideaToTasksSchema = z.object({
+  spaceId: z.string().min(1).max(64),
+  boardId: z.string().min(1).max(64),
+  idea: z.string().min(10).max(32000),
+  create: z.boolean().optional(),
+  model: z.string().min(1).max(120).optional(),
+  messages: z.array(ideaChatMessageSchema).max(24).optional(),
+  currentTasks: z.array(taskAiCreateTaskSchema).max(20).optional(),
+  tasks: z.array(taskAiCreateTaskSchema).max(20).optional(),
+})
+
+async function loadWorkspaceContextForIdea(
+  db: Db,
+  env: Env,
+  userId: string,
+  spaceId: string,
+  idea: string,
+) {
+  try {
+    return await retrieveAiWorkspaceContext(db, {
+      spaceId,
+      userId,
+      query: buildRetrievalQuery([idea.slice(0, 4000)]),
+      authSecret: env.BETTER_AUTH_SECRET,
+      noteLimit: 5,
+      taskLimit: 5,
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Forbidden') {
+      throw error
+    }
+    return null
+  }
+}
+
+async function createAiTasksOnBoard(
+  db: Db,
+  env: Env,
+  input: {
+    spaceId: string
+    boardId: string
+    userId: string
+    tasks: z.infer<typeof taskAiCreateTaskSchema>[]
+  },
+) {
+  const database = await databasesService.getDatabase(db, input.spaceId, input.boardId, input.userId)
+  const created = []
+
+  for (const task of input.tasks) {
+    const propertiesInput = buildAiCreateTaskProperties(task, database.schema)
+    const row = await databasesService.createRow(
+      db,
+      input.spaceId,
+      input.boardId,
+      input.userId,
+      { properties: propertiesInput },
+      env.BETTER_AUTH_SECRET,
+    )
+
+    created.push({
+      id: row.id,
+      title: task.title,
+    })
+  }
+
+  return created
+}
 
 async function loadWorkspaceContextForCompletion(
   db: Db,
@@ -531,15 +604,7 @@ export function createAiRoutes(db: Db, env: Env) {
     const settings = await settingsService.getAiSettings(db, user.id, env.BETTER_AUTH_SECRET)
     const model = body.model ?? settings.defaultModel
 
-    const properties = database.schema.properties.map((property) => ({
-      id: property.id,
-      name: property.name,
-      type: property.type as 'text' | 'number' | 'select' | 'multi_select',
-      options: property.config?.options?.map((option) => ({
-        id: option.id,
-        label: option.label,
-      })),
-    }))
+    const properties = buildTaskAiPropertiesFromSchema(database.schema.properties)
 
     const parsed = await breakSpecIntoTasks(apiKey, model, {
       pageTitle: page.title,
@@ -552,44 +617,93 @@ export function createAiRoutes(db: Db, env: Env) {
       return c.json(parsed)
     }
 
-    const created = []
-
-    for (const task of parsed.tasks) {
-      const propertiesInput: Record<string, unknown> = {
-        title: task.title,
-      }
-
-      if (task.description) {
-        propertiesInput.description = task.description
-      }
-      if (task.status) {
-        propertiesInput.status = task.status
-      }
-      if (task.assigneeIds !== undefined || task.assigneeId !== undefined) {
-        propertiesInput.assignee = normalizeAssigneeValue(
-          task.assigneeIds ?? task.assigneeId ?? null,
-        )
-      }
-      if (task.labelIds?.length) {
-        propertiesInput.labels = task.labelIds
-      }
-
-      const row = await databasesService.createRow(
-        db,
-        body.spaceId,
-        body.boardId,
-        user.id,
-        { properties: propertiesInput },
-        env.BETTER_AUTH_SECRET,
-      )
-
-      created.push({
-        id: row.id,
-        title: task.title,
-      })
-    }
+    const created = await createAiTasksOnBoard(db, env, {
+      spaceId: body.spaceId,
+      boardId: body.boardId,
+      userId: user.id,
+      tasks: parsed.tasks,
+    })
 
     return c.json({ ...parsed, created })
+  })
+
+  app.post('/idea-to-tasks', zValidator('json', ideaToTasksSchema), async (c) => {
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+
+    const body = c.req.valid('json')
+    const apiKey = await settingsService.getUserOpenRouterApiKey(
+      db,
+      user.id,
+      env.BETTER_AUTH_SECRET,
+    )
+
+    if (!apiKey) {
+      return c.json({ error: 'Add an OpenRouter API key in Settings → AI' }, 400)
+    }
+
+    try {
+      await requireSpaceMembership(db, body.spaceId, user.id)
+    } catch {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
+    const [database, members, existingRows, settings] = await Promise.all([
+      databasesService.getDatabase(db, body.spaceId, body.boardId, user.id),
+      listSpaceMembers(db, body.spaceId, user.id),
+      db
+        .select({ properties: databaseRows.properties })
+        .from(databaseRows)
+        .where(
+          and(eq(databaseRows.databaseId, body.boardId), eq(databaseRows.spaceId, body.spaceId)),
+        )
+        .limit(80),
+      settingsService.getAiSettings(db, user.id, env.BETTER_AUTH_SECRET),
+    ])
+
+    const model = body.model ?? settings.defaultModel
+    const properties = buildTaskAiPropertiesFromSchema(database.schema.properties)
+    const memberSummaries = members.map((member) => ({
+      userId: member.userId,
+      name: member.name,
+    }))
+    const existingTaskTitles = existingRows
+      .map((row) => readTaskTitle(row.properties))
+      .filter((title) => title.trim() && title !== 'Untitled')
+
+    const workspaceContext = await loadWorkspaceContextForIdea(
+      db,
+      env,
+      user.id,
+      body.spaceId,
+      body.idea,
+    )
+
+    const parsed = await breakIdeaIntoTasks(apiKey, model, {
+      idea: body.idea,
+      boardTitle: database.title,
+      properties,
+      members: memberSummaries,
+      existingTaskTitles,
+      workspaceContext,
+      messages: body.messages,
+      currentTasks: body.currentTasks,
+    })
+
+    if (!body.create) {
+      return c.json(parsed)
+    }
+
+    const tasksToCreate = body.tasks?.length ? body.tasks : parsed.tasks
+
+    const created = await createAiTasksOnBoard(db, env, {
+      spaceId: body.spaceId,
+      boardId: body.boardId,
+      userId: user.id,
+      tasks: tasksToCreate,
+    })
+
+    return c.json({ ...parsed, tasks: tasksToCreate, created })
   })
 
   return app

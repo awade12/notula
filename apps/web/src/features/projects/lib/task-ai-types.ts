@@ -11,6 +11,10 @@ export type TaskAiCreateTask = {
   assigneeIds?: string[]
   assigneeId?: string | null
   labelIds?: string[]
+  milestone?: string
+  priority?: string
+  estimate?: number | null
+  dueDate?: string
 }
 
 export type TaskAiProperty = {

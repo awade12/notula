@@ -32,11 +32,21 @@ function ensureHeadingSpaces(text: string) {
   return text.replace(/(^|\n)(#{1,6})([^\s#\n])/g, '$1$2 $3')
 }
 
+function splitInlineSectionLabels(text: string) {
+  return text.replace(/\s*\*\*([^*]+)\*\*:\s*/g, '\n\n## $1\n\n')
+}
+
+function stripDescriptionPrefix(text: string) {
+  return text.replace(/^Markdown:\s*/i, '')
+}
+
 export function normalizeTaskAiMarkdown(markdown: string) {
   let text = markdown.replace(/\r\n/g, '\n').trim()
   if (!text) return ''
 
+  text = stripDescriptionPrefix(text)
   text = text.replace(/\\n/g, '\n')
+  text = splitInlineSectionLabels(text)
   text = collapseDuplicateHeadingMarkers(text)
   text = ensureHeadingSpaces(text)
   text = text.replace(/([^\n#])(#{1,6}\s)/g, '$1\n\n$2')

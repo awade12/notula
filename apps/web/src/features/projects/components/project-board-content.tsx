@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Settings } from 'lucide-react'
+import { Settings, Sparkles } from 'lucide-react'
 import { findProperty } from '@notesapp/shared'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -12,6 +12,7 @@ import { useUpdateView } from '@/features/database/hooks/use-view-actions'
 import { useLoadMoreRows, useRows } from '@/features/database/hooks/use-rows'
 import type { Database } from '@/features/database/types'
 import type { ConnectionStatus } from '@/features/editor/types'
+import { ProjectBoardIdeaToTasksDialog } from '@/features/projects/components/project-board-idea-to-tasks-dialog'
 import {
   ProjectBoardToolbar,
   type ProjectBoardLayoutMode,
@@ -65,6 +66,7 @@ export function ProjectBoardContent({
   const updateView = useUpdateView(spaceId, boardId)
   const queryClient = useQueryClient()
   const layoutPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [ideaDialogOpen, setIdeaDialogOpen] = useState(false)
 
   const boardView = database.views.find((view) => view.type === 'board') ?? database.views[0]
 
@@ -300,6 +302,16 @@ export function ProjectBoardContent({
           </div>
 
           <div className="flex items-center gap-2">
+            {canEdit && aiSettings?.hasApiKey ? (
+              <button
+                type="button"
+                onClick={() => setIdeaDialogOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs tracking-dashboard text-violet-200 transition-colors hover:bg-violet-500/15"
+              >
+                <Sparkles className="size-3.5" strokeWidth={1.75} />
+                Plan from idea
+              </button>
+            ) : null}
             <Link
               to="/s/$spaceId/projects/$boardId/settings/status"
               params={{ spaceId, boardId }}
@@ -411,6 +423,17 @@ export function ProjectBoardContent({
           </div>
         ) : null}
       </div>
+
+      {canEdit ? (
+        <ProjectBoardIdeaToTasksDialog
+          spaceId={spaceId}
+          boardId={boardId}
+          boardTitle={database.title}
+          schemaProperties={database.schema.properties}
+          open={ideaDialogOpen}
+          onOpenChange={setIdeaDialogOpen}
+        />
+      ) : null}
     </SlidePanelLayout>
   )
 }

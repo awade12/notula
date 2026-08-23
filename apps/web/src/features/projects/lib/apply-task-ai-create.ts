@@ -57,6 +57,42 @@ function buildCreateProperties(
     }
   }
 
+  if (create.milestone) {
+    const milestoneProperty = schemaProperties.find(
+      (property) => property.id === PROJECT_BOARD_PROPERTY_IDS.milestone,
+    )
+    if (milestoneProperty?.type === 'select') {
+      properties[PROJECT_BOARD_PROPERTY_IDS.milestone] = create.milestone
+    }
+  }
+
+  if (create.priority) {
+    const priorityProperty = schemaProperties.find(
+      (property) => property.id === PROJECT_BOARD_PROPERTY_IDS.priority,
+    )
+    if (priorityProperty?.type === 'select') {
+      properties[PROJECT_BOARD_PROPERTY_IDS.priority] = create.priority
+    }
+  }
+
+  if (create.estimate !== undefined && create.estimate !== null) {
+    const estimateProperty = schemaProperties.find(
+      (property) => property.id === PROJECT_BOARD_PROPERTY_IDS.estimate,
+    )
+    if (estimateProperty?.type === 'number') {
+      properties[PROJECT_BOARD_PROPERTY_IDS.estimate] = create.estimate
+    }
+  }
+
+  if (create.dueDate?.trim()) {
+    const dueDateProperty = schemaProperties.find(
+      (property) => property.id === PROJECT_BOARD_PROPERTY_IDS.dueDate,
+    )
+    if (dueDateProperty?.type === 'text') {
+      properties[PROJECT_BOARD_PROPERTY_IDS.dueDate] = create.dueDate.trim()
+    }
+  }
+
   return properties
 }
 
