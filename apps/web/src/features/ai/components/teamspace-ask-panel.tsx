@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { FilePlus2, Loader2, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { AiMarkdownBody } from '@/features/ai/components/ai-markdown-body'
