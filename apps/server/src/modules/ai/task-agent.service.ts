@@ -13,6 +13,7 @@ export const taskAiCreateTaskSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().max(8000).optional(),
   status: z.string().optional(),
+  assigneeIds: z.array(z.string()).optional(),
   assigneeId: z.string().nullable().optional(),
   labelIds: z.array(z.string()).optional(),
 })
@@ -26,7 +27,7 @@ export const taskAiResponseSchema = z.object({
 export const taskAiPropertySchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().min(1).max(100),
-  type: z.enum(['text', 'number', 'select', 'multi_select']),
+  type: z.enum(['text', 'number', 'select', 'multi_select', 'relation']),
   options: z
     .array(
       z.object({
@@ -81,7 +82,7 @@ Respond with ONLY valid JSON (no markdown fences, no commentary outside JSON):
       "title": "New subtask title",
       "description": "optional markdown",
       "status": "option id",
-      "assigneeId": "member userId or null",
+      "assigneeIds": ["member userId"],
       "labelIds": ["option id"]
     }
   ]
@@ -98,15 +99,15 @@ Property rules:
 - propertyId must match an id from the editable property schema exactly.
 - For select fields, value must be an option id from the schema (not the label).
 - For multi_select (labels), value must be an array of option ids.
-- For text fields (title, description, due_date, assignee), value is a string. Use YYYY-MM-DD for due_date.
-- For assignee, value must be a member userId from the members list, or null to unassign.
+- For text fields (title, description, due_date), value is a string. Use YYYY-MM-DD for due_date.
+- For assignee (relation), value is an array of member userIds from the members list, or [] to unassign. A single userId string is also accepted.
 - For number (estimate), value is a number or null.
 - For description updates, put the complete new description in value (markdown lists and paragraphs are fine).
 - Use proper markdown line breaks: blank line between headings and sections, each list item on its own line.
 - If the user only asks a question with no change requested, return an empty actions array.
 - When they ask you to update, fix, set, or change something, include the matching actions.
 - When they ask to break work into subtasks, add follow-up tasks, or create tasks on this board, return createTasks with new rows to add. Do not use createTasks to edit the open task — use actions for that.
-- createTasks titles must be specific. Use status/assignee/label ids from the schema when relevant.
+- createTasks titles must be specific. Use status/assigneeIds/label ids from the schema when relevant.
 - Keep reply conversational and specific to this task. Summaries should name the field and change (e.g. "Add launch todo checklist to description", "Set status to In progress").
 - In reply, briefly say what you are proposing to change before the user applies it.
 
@@ -132,7 +133,7 @@ function buildPropertySchemaBlock(properties: TaskAgentRequest['properties']) {
 
 function buildMembersBlock(members: TaskAgentRequest['members']) {
   if (!members?.length) return ''
-  return `\nTeam members (for assignee):\n${JSON.stringify(members, null, 2)}`
+  return `\nTeam members (for assignees):\n${JSON.stringify(members, null, 2)}`
 }
 
 export function buildTaskAgentMessages(

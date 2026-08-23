@@ -14,6 +14,7 @@ type ProjectTaskDetailsTabProps = {
   spaceId: string
   boardId: string
   row: DatabaseRow
+  rows?: DatabaseRow[]
   groupProperty: PropertyDefinition
   titleProperty: PropertyDefinition
   labelProperty?: PropertyDefinition
@@ -29,6 +30,8 @@ type ProjectTaskDetailsTabProps = {
   linkedPageTitle?: string
   connectionStatus?: ConnectionStatus
   readOnly?: boolean
+  isPublicView?: boolean
+  onOpenTask?: (taskId: string) => void
   onClose: () => void
 }
 
@@ -47,6 +50,7 @@ export function ProjectTaskDetailsTab({
   spaceId,
   boardId,
   row,
+  rows = [],
   groupProperty,
   titleProperty,
   labelProperty,
@@ -62,6 +66,8 @@ export function ProjectTaskDetailsTab({
   linkedPageTitle,
   connectionStatus = 'synced',
   readOnly = false,
+  isPublicView = false,
+  onOpenTask,
   onClose,
 }: ProjectTaskDetailsTabProps) {
   const updateCell = useUpdateCell(spaceId, boardId)
@@ -77,7 +83,12 @@ export function ProjectTaskDetailsTab({
     if (priorityProperty) properties.push(priorityProperty)
     if (estimateProperty) properties.push(estimateProperty)
     properties.push({ id: 'due_date', name: 'Due date', type: 'text' })
-    properties.push({ id: 'assignee', name: 'Assignee', type: 'text' })
+    properties.push({
+      id: 'assignee',
+      name: 'Assignees',
+      type: 'relation',
+      config: { limit: 8 },
+    })
     return properties
   }, [
     titleProperty,
@@ -141,6 +152,7 @@ export function ProjectTaskDetailsTab({
         spaceId={spaceId}
         boardId={boardId}
         row={row}
+        rows={rows}
         groupProperty={groupProperty}
         labelProperty={labelProperty}
         milestoneProperty={milestoneProperty}
@@ -156,6 +168,8 @@ export function ProjectTaskDetailsTab({
         schemaProperties={schemaProperties}
         updatedLabel={updatedLabel}
         readOnly={readOnly}
+        isPublicView={isPublicView}
+        onOpenTask={onOpenTask}
         onClose={onClose}
       />
     </div>

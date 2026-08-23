@@ -1,4 +1,4 @@
-import { parseCellValue, type PropertyDefinition } from '@notesapp/shared'
+import { parseCellValue, normalizeAssigneeValue, type PropertyDefinition } from '@notesapp/shared'
 import type { UseMutateAsyncFunction } from '@tanstack/react-query'
 import type { TaskAiAction } from './task-ai-types'
 import { markdownToTaskDescriptionBlocks } from './markdown-to-task-description-blocks'
@@ -37,6 +37,13 @@ function normalizeAiValue(property: PropertyDefinition, value: unknown) {
   if (property.type === 'multi_select' && (value === null || value === undefined)) return []
   if (property.type === 'number' && value === null) return null
   if (property.type === 'text' && value === null) return ''
+
+  if (property.type === 'relation') {
+    if (value === null || value === undefined || value === '') return []
+    if (typeof value === 'string') return normalizeAssigneeValue(value)
+    if (Array.isArray(value)) return normalizeAssigneeValue(value)
+    return []
+  }
 
   return parseCellValue(property, value)
 }

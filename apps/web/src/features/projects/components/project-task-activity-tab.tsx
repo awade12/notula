@@ -1,6 +1,9 @@
 import { ArrowUp } from 'lucide-react'
 import { useState } from 'react'
+import type { PropertyDefinition } from '@notesapp/shared'
+import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
 import { cn } from '@/lib/cn'
+import { formatTaskActivityBody } from '../lib/format-task-activity'
 import { useAutoResizeTextarea } from '../hooks/use-auto-resize-textarea'
 import {
   useAddTaskComment,
@@ -12,6 +15,8 @@ type ProjectTaskActivityTabProps = {
   spaceId: string
   boardId: string
   rowId: string
+  schemaProperties?: PropertyDefinition[]
+  members?: SpaceMember[]
   readOnly?: boolean
 }
 
@@ -38,6 +43,7 @@ function activityLabel(item: TaskActivityItem) {
   if (item.kind === 'status_change') return 'changed status'
   if (item.kind === 'property_change') return 'updated'
   if (item.kind === 'created') return 'created this task'
+  if (item.metadata?.subtaskTitle) return 'added a subtask'
   return 'updated'
 }
 
@@ -45,6 +51,8 @@ export function ProjectTaskActivityTab({
   spaceId,
   boardId,
   rowId,
+  schemaProperties = [],
+  members = [],
   readOnly = false,
 }: ProjectTaskActivityTabProps) {
   const { data: activity = [], isLoading } = useTaskActivity(spaceId, boardId, rowId)
@@ -75,6 +83,7 @@ export function ProjectTaskActivityTab({
               <ActivityFeedItem
                 key={item.id}
                 item={item}
+                body={formatTaskActivityBody(item, schemaProperties, members)}
                 isLast={index === activity.length - 1}
               />
             ))}
@@ -156,7 +165,15 @@ function ActivityEmptyState() {
   )
 }
 
-function ActivityFeedItem({ item, isLast }: { item: TaskActivityItem; isLast: boolean }) {
+function ActivityFeedItem({
+  item,
+  body,
+  isLast,
+}: {
+  item: TaskActivityItem
+  body: string
+  isLast: boolean
+}) {
   const isComment = item.kind === 'comment'
 
   return (
@@ -188,10 +205,10 @@ function ActivityFeedItem({ item, isLast }: { item: TaskActivityItem; isLast: bo
 
         {isComment ? (
           <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-text-emphasis">
-            {item.body}
+            {body}
           </p>
         ) : (
-          <p className="mt-0.5 text-[12px] leading-snug text-text-primary/45">{item.body}</p>
+          <p className="mt-0.5 text-[12px] leading-snug text-text-primary/45">{body}</p>
         )}
       </div>
     </div>

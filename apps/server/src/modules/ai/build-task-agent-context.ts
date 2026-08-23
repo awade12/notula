@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import {
   findProperty,
+  normalizeAssigneeValue,
   normalizeMultiSelectValue,
   PROJECT_BOARD_PROPERTY_IDS,
   type DatabaseSchema,
@@ -81,8 +82,10 @@ export function buildTaskContextFromRow(input: {
   const priority = readSelectLabel(priorityProperty, properties[PROJECT_BOARD_PROPERTY_IDS.priority])
   const estimate = readNumber(properties, PROJECT_BOARD_PROPERTY_IDS.estimate)
   const dueDate = readText(properties, PROJECT_BOARD_PROPERTY_IDS.dueDate)
-  const assigneeId = readText(properties, PROJECT_BOARD_PROPERTY_IDS.assignee)
-  const assignee = members.find((member) => member.userId === assigneeId)
+  const assigneeIds = normalizeAssigneeValue(properties[PROJECT_BOARD_PROPERTY_IDS.assignee])
+  const assigneeNames = assigneeIds
+    .map((userId) => members.find((member) => member.userId === userId)?.name)
+    .filter((name): name is string => Boolean(name))
 
   const lines = [
     `Board: ${boardTitle}`,
@@ -97,7 +100,7 @@ export function buildTaskContextFromRow(input: {
     milestone ? `Milestone: ${milestone}` : null,
     estimate !== null ? `Estimate: ${estimate} points` : null,
     dueDate ? `Due date: ${dueDate}` : null,
-    assignee ? `Assignee: ${assignee.name}` : null,
+    assigneeNames.length > 0 ? `Assignees: ${assigneeNames.join(', ')}` : 'Assignees: (none)',
     input.linkedNote
       ? `Linked doc "${input.linkedNote.title}":\n${input.linkedNote.content.slice(0, 6000) || '(empty)'}`
       : null,
@@ -149,6 +152,11 @@ export function buildTaskAiPropertiesFromSchema(properties: PropertyDefinition[]
           label: option.label,
         })),
       })
+      continue
+    }
+
+    if (property.type === 'relation') {
+      result.push({ id: property.id, name: property.name, type: 'relation' })
     }
   }
 

@@ -26,6 +26,7 @@ export const databaseViewConfigSchema = z.object({
   sorts: z.array(sortRuleSchema).optional(),
   groupByPropertyId: z.string().nullable().optional(),
   hiddenGroupIds: z.array(z.string()).optional(),
+  layoutMode: z.enum(['board', 'table', 'list', 'calendar']).optional(),
 })
 
 export type FilterOperator = z.infer<typeof filterOperatorSchema>

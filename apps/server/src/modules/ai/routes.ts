@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
+import { normalizeAssigneeValue } from '@notesapp/shared'
 import type { Db } from '../../db/client'
 import type { Env } from '../../env'
 import type { SessionVariables } from '../../middleware/session'
@@ -564,8 +565,10 @@ export function createAiRoutes(db: Db, env: Env) {
       if (task.status) {
         propertiesInput.status = task.status
       }
-      if (task.assigneeId !== undefined) {
-        propertiesInput.assignee = task.assigneeId
+      if (task.assigneeIds !== undefined || task.assigneeId !== undefined) {
+        propertiesInput.assignee = normalizeAssigneeValue(
+          task.assigneeIds ?? task.assigneeId ?? null,
+        )
       }
       if (task.labelIds?.length) {
         propertiesInput.labels = task.labelIds

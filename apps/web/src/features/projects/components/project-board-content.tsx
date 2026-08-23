@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
 import { findProperty } from '@notesapp/shared'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { PageIconDisplay } from '@/features/workspace/components/page-icon-display'
 import { PageIconPicker } from '@/features/workspace/components/page-icon-picker'
 import { flattenPages } from '@/features/editor/lib/flatten-pages'
@@ -23,11 +24,17 @@ import { ProjectTaskPanel } from '@/features/projects/components/project-task-pa
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
 import { buildProjectTaskUrl } from '@/features/projects/lib/build-task-url'
 import { buildTaskAiPropertySchema } from '@/features/projects/lib/build-task-ai-schema'
+import { filterTopLevelTasks } from '@/features/projects/lib/filter-top-level-tasks'
 import { useProjectTaskUrlSync } from '@/features/projects/hooks/use-task-url-sync'
 import { useAiSettings } from '@/features/settings/hooks/use-ai-settings'
 import { SlidePanelLayout } from '@/components/layout/slide-panel-layout'
 
 const ROWS_PAGE_SIZE = 200
+const LAYOUT_PERSIST_MS = 350
+
+function isProjectBoardLayoutMode(value: unknown): value is ProjectBoardLayoutMode {
+  return value === 'board' || value === 'table' || value === 'list' || value === 'calendar'
+}
 
 type ProjectBoardContentProps = {
   spaceId: string
@@ -56,10 +63,31 @@ export function ProjectBoardContent({
   const { data: aiSettings } = useAiSettings()
   const { openTask, closeTask } = useProjectTaskUrlSync(spaceId, boardId)
   const updateView = useUpdateView(spaceId, boardId)
+  const queryClient = useQueryClient()
+  const layoutPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const boardView = database.views.find((view) => view.type === 'board') ?? database.views[0]
 
-  const [layoutMode, setLayoutMode] = useState<ProjectBoardLayoutMode>('board')
+  const [layoutMode, setLayoutMode] = useState<ProjectBoardLayoutMode>(() => {
+    const saved = boardView?.config.layoutMode
+    return isProjectBoardLayoutMode(saved) ? saved : 'board'
+  })
+  const [visitedLayouts, setVisitedLayouts] = useState<Set<ProjectBoardLayoutMode>>(
+    () => new Set([isProjectBoardLayoutMode(boardView?.config.layoutMode) ? boardView.config.layoutMode : 'board']),
+  )
+
+  useEffect(() => {
+    const saved = boardView?.config.layoutMode
+    const next = isProjectBoardLayoutMode(saved) ? saved : 'board'
+    setLayoutMode(next)
+    setVisitedLayouts(new Set([next]))
+  }, [boardId, boardView?.id])
+
+  useEffect(() => {
+    return () => {
+      if (layoutPersistTimerRef.current) clearTimeout(layoutPersistTimerRef.current)
+    }
+  }, [])
 
   const activeView = boardView
 
@@ -76,6 +104,7 @@ export function ProjectBoardContent({
   })
 
   const rows = rowsResult?.rows ?? []
+  const boardRows = useMemo(() => filterTopLevelTasks(rows), [rows])
   const pages = useMemo(() => (tree ? flattenPages(tree) : []), [tree])
 
   const groupProperty = useMemo(() => {
@@ -139,6 +168,23 @@ export function ProjectBoardContent({
 
   const hiddenGroupIds = boardView.config.hiddenGroupIds ?? []
 
+  function patchLayoutModeInCache(mode: ProjectBoardLayoutMode) {
+    if (!activeView) return
+
+    queryClient.setQueryData<Database>(['database', spaceId, boardId], (current) => {
+      if (!current) return current
+
+      return {
+        ...current,
+        views: current.views.map((view) =>
+          view.id === activeView.id
+            ? { ...view, config: { ...view.config, layoutMode: mode } }
+            : view,
+        ),
+      }
+    })
+  }
+
   function persistViewConfig(patch: Partial<NonNullable<typeof activeView>['config']>) {
     if (!activeView) return
     void updateView.mutateAsync({
@@ -148,6 +194,25 @@ export function ProjectBoardContent({
         ...patch,
       },
     })
+  }
+
+  function handleLayoutModeChange(mode: ProjectBoardLayoutMode) {
+    setLayoutMode(mode)
+    setVisitedLayouts((current) => {
+      if (current.has(mode)) return current
+      const next = new Set(current)
+      next.add(mode)
+      return next
+    })
+    patchLayoutModeInCache(mode)
+
+    if (layoutPersistTimerRef.current) {
+      clearTimeout(layoutPersistTimerRef.current)
+    }
+
+    layoutPersistTimerRef.current = setTimeout(() => {
+      persistViewConfig({ layoutMode: mode })
+    }, LAYOUT_PERSIST_MS)
   }
 
   function handleOpenTask(taskId: string) {
@@ -172,6 +237,7 @@ export function ProjectBoardContent({
             boardId={boardId}
             boardTitle={database.title}
             row={selectedTask}
+            rows={rows}
             groupProperty={groupProperty}
             titleProperty={titleProperty}
             labelProperty={labelProperty}
@@ -184,6 +250,7 @@ export function ProjectBoardContent({
             readOnly={!canEdit}
             connectionStatus={connectionStatus}
             taskUrl={buildProjectTaskUrl(spaceId, boardId, selectedTask.id)}
+            onOpenTask={handleOpenTask}
             onClose={handleCloseTask}
           />
         ) : null
@@ -246,14 +313,14 @@ export function ProjectBoardContent({
 
         <ProjectBoardToolbar
           layoutMode={layoutMode}
-          onLayoutModeChange={setLayoutMode}
+          onLayoutModeChange={handleLayoutModeChange}
           schema={database.schema}
           filters={activeView?.config.filters ?? []}
           sorts={activeView?.config.sorts ?? []}
           onFiltersChange={(filters) => persistViewConfig({ filters })}
           onSortsChange={(sorts) => persistViewConfig({ sorts })}
           readOnly={!canEdit}
-          taskCount={rows.length}
+          taskCount={boardRows.length}
           totalCount={rowsResult?.total}
           aiFilterEnabled={Boolean(aiSettings?.hasApiKey)}
           aiFilterProperties={aiFilterProperties}
@@ -264,8 +331,9 @@ export function ProjectBoardContent({
         {rowsLoading ? (
           <p className="text-sm text-text-primary/45">Loading tasks…</p>
         ) : (
-          <div className="min-h-0 flex-1">
-            {layoutMode === 'board' ? (
+          <div className="relative min-h-0 flex-1">
+            {visitedLayouts.has('board') ? (
+            <div className={layoutMode === 'board' ? 'min-h-0' : 'hidden'} aria-hidden={layoutMode !== 'board'}>
               <ProjectKanbanView
                 spaceId={spaceId}
                 databaseId={boardId}
@@ -284,11 +352,13 @@ export function ProjectBoardContent({
                 hiddenGroupIds={hiddenGroupIds}
                 onOpenTask={handleOpenTask}
               />
+            </div>
             ) : null}
 
-            {layoutMode === 'table' ? (
+            {visitedLayouts.has('table') ? (
+            <div className={layoutMode === 'table' ? 'min-h-0' : 'hidden'} aria-hidden={layoutMode !== 'table'}>
               <ProjectTaskTableView
-                rows={rows}
+                rows={boardRows}
                 titlePropertyId={titleProperty.id}
                 groupProperty={groupProperty}
                 labelProperty={labelProperty}
@@ -297,25 +367,33 @@ export function ProjectBoardContent({
                 selectedTaskId={selectedTaskId}
                 onOpenTask={handleOpenTask}
               />
+            </div>
             ) : null}
 
-            {layoutMode === 'list' ? (
+            {visitedLayouts.has('list') ? (
+            <div className={layoutMode === 'list' ? 'min-h-0' : 'hidden'} aria-hidden={layoutMode !== 'list'}>
               <ProjectTaskListView
-                rows={rows}
+                rows={boardRows}
                 groupProperty={groupProperty}
                 titlePropertyId={titleProperty.id}
                 selectedTaskId={selectedTaskId}
                 onOpenTask={handleOpenTask}
               />
+            </div>
             ) : null}
 
-            {layoutMode === 'calendar' ? (
+            {visitedLayouts.has('calendar') ? (
+            <div
+              className={layoutMode === 'calendar' ? 'min-h-0' : 'hidden'}
+              aria-hidden={layoutMode !== 'calendar'}
+            >
               <ProjectDueDateCalendarView
-                rows={rows}
+                rows={boardRows}
                 titlePropertyId={titleProperty.id}
                 selectedTaskId={selectedTaskId}
                 onOpenTask={handleOpenTask}
               />
+            </div>
             ) : null}
           </div>
         )}

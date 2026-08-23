@@ -1,6 +1,6 @@
 import type { DatabaseRow } from '@/features/database/types'
 import type { PropertyDefinition } from '@notesapp/shared'
-import { normalizeMultiSelectValue } from '@notesapp/shared'
+import { normalizeAssigneeValue, normalizeMultiSelectValue } from '@notesapp/shared'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
 import { projectTaskDescriptionToPlainText } from './project-task-description-content'
 
@@ -63,8 +63,10 @@ export function buildProjectTaskContext(input: {
   const estimate = readNumber(row.properties, estimatePropertyId)
   const dueDate = readText(row.properties, 'due_date')
   const description = projectTaskDescriptionToPlainText(row.properties.description)
-  const assigneeId = readText(row.properties, 'assignee')
-  const assignee = members.find((member) => member.userId === assigneeId)
+  const assigneeIds = normalizeAssigneeValue(row.properties.assignee)
+  const assigneeNames = assigneeIds
+    .map((userId) => members.find((member) => member.userId === userId)?.name)
+    .filter((name): name is string => Boolean(name))
 
   const lines = [
     boardTitle ? `Board: ${boardTitle}` : null,
@@ -79,7 +81,7 @@ export function buildProjectTaskContext(input: {
     milestone ? `Milestone: ${milestone}` : null,
     estimate !== null ? `Estimate: ${estimate} points` : null,
     dueDate ? `Due date: ${dueDate}` : null,
-    assignee ? `Assignee: ${assignee.name}` : null,
+    assigneeNames.length > 0 ? `Assignees: ${assigneeNames.join(', ')}` : null,
   ].filter(Boolean)
 
   return lines.join('\n')

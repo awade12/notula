@@ -11,6 +11,7 @@ export const PROJECT_BOARD_PROPERTY_IDS = {
   dueDate: 'due_date',
   assignee: 'assignee',
   linkedNote: 'linked_note',
+  parentTask: 'parent_task',
 } as const
 
 export const PROJECT_TASK_DESCRIPTION_MAX_LENGTH = 64_000
@@ -83,6 +84,7 @@ const PROJECT_BOARD_EXTRA_PROPERTIES: PropertyDefinition[] = [
     type: 'relation',
     config: { limit: PROJECT_BOARD_ASSIGNEE_LIMIT },
   },
+  { id: PROJECT_BOARD_PROPERTY_IDS.parentTask, name: 'Parent task', type: 'text' },
 ]
 
 export function normalizeMultiSelectValue(value: unknown): string[] {

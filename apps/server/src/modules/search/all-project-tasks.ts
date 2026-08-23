@@ -1,4 +1,5 @@
 import { and, desc, eq } from 'drizzle-orm'
+import { normalizeAssigneeValue } from '@notesapp/shared'
 import type { Db } from '../../db/client'
 import { databaseRows, databases } from '../../db/schema/databases'
 import { requireSpaceMembership } from '../spaces/permissions'
@@ -11,7 +12,7 @@ export type AllProjectTaskRow = {
   title: string
   snippet: string
   status: string | null
-  assigneeId: string | null
+  assigneeIds: string[]
   dueDate: string | null
   updatedAt: Date
 }
@@ -51,7 +52,7 @@ export async function listAllProjectTasks(
       title: readTaskTitle(properties),
       snippet: readTaskDescriptionSnippet(properties),
       status: typeof status === 'string' ? status : null,
-      assigneeId: typeof assignee === 'string' ? assignee : null,
+      assigneeIds: normalizeAssigneeValue(assignee),
       dueDate: typeof dueDate === 'string' ? dueDate : null,
       updatedAt: row.updatedAt,
     }

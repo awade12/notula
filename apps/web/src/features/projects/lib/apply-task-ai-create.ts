@@ -1,4 +1,4 @@
-import { PROJECT_BOARD_PROPERTY_IDS } from '@notesapp/shared'
+import { PROJECT_BOARD_PROPERTY_IDS, normalizeAssigneeValue } from '@notesapp/shared'
 import type { PropertyDefinition } from '@notesapp/shared'
 import type { UseMutateAsyncFunction } from '@tanstack/react-query'
 import type { DatabaseRow } from '@/features/database/types'
@@ -37,8 +37,15 @@ function buildCreateProperties(
     }
   }
 
-  if (create.assigneeId !== undefined) {
-    properties[PROJECT_BOARD_PROPERTY_IDS.assignee] = create.assigneeId
+  const assigneeIds = normalizeAssigneeValue(
+    create.assigneeIds ?? (create.assigneeId === undefined ? undefined : create.assigneeId),
+  )
+  if (
+    assigneeIds.length > 0 ||
+    create.assigneeIds !== undefined ||
+    create.assigneeId !== undefined
+  ) {
+    properties[PROJECT_BOARD_PROPERTY_IDS.assignee] = assigneeIds
   }
 
   if (create.labelIds?.length) {

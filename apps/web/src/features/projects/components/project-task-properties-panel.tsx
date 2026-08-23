@@ -16,11 +16,13 @@ import {
   ProjectTaskPropertySection,
 } from './project-task-property-row'
 import { ProjectTaskSelectField } from './project-task-select-field'
+import { ProjectTaskSubtasksSection } from './project-task-subtasks-section'
 
 type ProjectTaskPropertiesPanelProps = {
   spaceId: string
   boardId: string
   row: DatabaseRow
+  rows?: DatabaseRow[]
   groupProperty: PropertyDefinition
   labelProperty?: PropertyDefinition
   milestoneProperty?: PropertyDefinition
@@ -31,6 +33,7 @@ type ProjectTaskPropertiesPanelProps = {
   members: SpaceMember[]
   updatedLabel?: string | null
   readOnly?: boolean
+  onOpenTask?: (taskId: string) => void
   onClose: () => void
 }
 
@@ -40,6 +43,7 @@ export function ProjectTaskPropertiesPanel({
   spaceId,
   boardId,
   row,
+  rows = [],
   groupProperty,
   labelProperty,
   milestoneProperty,
@@ -50,6 +54,7 @@ export function ProjectTaskPropertiesPanel({
   members,
   updatedLabel,
   readOnly = false,
+  onOpenTask,
   onClose,
 }: ProjectTaskPropertiesPanelProps) {
   const updateCell = useUpdateCell(spaceId, boardId)
@@ -163,17 +168,17 @@ export function ProjectTaskPropertiesPanel({
         </ProjectTaskPropertySection>
 
         <ProjectTaskPropertySection title={hasPlanningExtras ? 'Planning' : undefined}>
-          <ProjectTaskPropertyRow label="Assignee">
+          <ProjectTaskPropertyRow label="Assignees">
             <ProjectTaskAssigneeField
               value={row.properties.assignee}
               members={members}
               readOnly={readOnly}
               variant={FIELD_VARIANT}
-              onCommit={(userId) =>
+              onCommit={(userIds) =>
                 void updateCell.mutateAsync({
                   rowId: row.id,
                   propertyId: 'assignee',
-                  value: userId ?? '',
+                  value: userIds,
                 })
               }
             />
@@ -235,6 +240,18 @@ export function ProjectTaskPropertiesPanel({
           </ProjectTaskPropertySection>
         ) : null}
       </div>
+
+      {onOpenTask ? (
+        <ProjectTaskSubtasksSection
+          spaceId={spaceId}
+          boardId={boardId}
+          parentRow={row}
+          rows={rows}
+          groupProperty={groupProperty}
+          readOnly={readOnly}
+          onOpenTask={onOpenTask}
+        />
+      ) : null}
 
       {!readOnly ? (
         <div className="shrink-0 border-t border-border/60 px-3 py-3">

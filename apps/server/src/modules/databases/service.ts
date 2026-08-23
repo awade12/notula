@@ -7,6 +7,7 @@ import {
   DEFAULT_SELECT_SCHEMA,
   findProperty,
   parseCellValue,
+  PROJECT_BOARD_PROPERTY_IDS,
   PROJECT_BOARD_SCHEMA,
   type DatabaseSchema,
   type FilterRule,
@@ -47,8 +48,36 @@ function formatActivityValue(value: unknown) {
   if (value === null || value === undefined || value === '') return 'Empty'
   if (typeof value === 'string') return value
   if (typeof value === 'number') return String(value)
-  if (Array.isArray(value)) return value.join(', ')
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'Empty'
+    return value.join(', ')
+  }
   return JSON.stringify(value)
+}
+
+function formatPropertyActivityBody(
+  property: { id: string; name: string; type: string; config?: { options?: Array<{ id: string; label: string }> } },
+  previousValue: unknown,
+  nextValue: unknown,
+) {
+  if (property.id === 'status') {
+    return `${formatActivityValue(previousValue)} → ${formatActivityValue(nextValue)}`
+  }
+
+  const labelFor = (value: unknown) => {
+    if (property.type === 'select' && typeof value === 'string') {
+      return property.config?.options?.find((option) => option.id === value)?.label ?? value
+    }
+    if (property.type === 'multi_select' && Array.isArray(value)) {
+      const labels = value
+        .filter((item): item is string => typeof item === 'string')
+        .map((id) => property.config?.options?.find((option) => option.id === id)?.label ?? id)
+      return labels.length > 0 ? labels.join(', ') : 'Empty'
+    }
+    return formatActivityValue(value)
+  }
+
+  return `${property.name}: ${labelFor(previousValue)} → ${labelFor(nextValue)}`
 }
 
 async function recordProjectTaskActivity(
@@ -506,6 +535,22 @@ export async function createRow(
       kind: 'created',
       body: 'Created this task',
     })
+
+    const parentTaskId = properties[PROJECT_BOARD_PROPERTY_IDS.parentTask]
+    if (typeof parentTaskId === 'string' && parentTaskId.trim()) {
+      await recordProjectTaskActivity(db, {
+        spaceId,
+        rowId: parentTaskId,
+        userId,
+        kind: 'property_change',
+        body: `Added subtask: ${readTaskTitle(properties) || 'Untitled'}`,
+        metadata: {
+          propertyId: PROJECT_BOARD_PROPERTY_IDS.parentTask,
+          subtaskId: id,
+          subtaskTitle: readTaskTitle(properties),
+        },
+      })
+    }
   }
 
   return {
@@ -535,7 +580,8 @@ export async function updateRowCell(
 
   const parsedValue = parseCellValue(property, input.value)
   const nextValue =
-    property.type === 'relation'
+    property.type === 'relation' &&
+    input.propertyId === PROJECT_BOARD_PROPERTY_IDS.linkedNote
       ? await filterValidPageIds(db, spaceId, parsedValue as string[])
       : parsedValue
 
@@ -595,14 +641,36 @@ export async function updateRowCell(
       userId,
       kind: isStatus ? 'status_change' : 'property_change',
       body: isStatus
-        ? `${formatActivityValue(previousValue)} → ${formatActivityValue(nextValue)}`
-        : `Updated ${property.name}`,
+        ? formatPropertyActivityBody(property, previousValue, nextValue)
+        : formatPropertyActivityBody(property, previousValue, nextValue),
       metadata: {
         propertyId: input.propertyId,
+        propertyName: property.name,
         from: previousValue,
         to: nextValue,
       },
     })
+
+    if (input.propertyId === PROJECT_BOARD_PROPERTY_IDS.parentTask) {
+      const previousParent =
+        typeof previousValue === 'string' && previousValue.trim() ? previousValue.trim() : ''
+      const nextParent = typeof nextValue === 'string' && nextValue.trim() ? nextValue.trim() : ''
+
+      if (nextParent && nextParent !== previousParent) {
+        await recordProjectTaskActivity(db, {
+          spaceId,
+          rowId: nextParent,
+          userId,
+          kind: 'property_change',
+          body: `Added subtask: ${readTaskTitle(nextProperties) || 'Untitled'}`,
+          metadata: {
+            propertyId: PROJECT_BOARD_PROPERTY_IDS.parentTask,
+            subtaskId: rowId,
+            subtaskTitle: readTaskTitle(nextProperties),
+          },
+        })
+      }
+    }
   }
 
   return {

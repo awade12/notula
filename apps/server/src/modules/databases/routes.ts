@@ -7,6 +7,7 @@ import {
   databaseSchemaSchema,
   databaseViewConfigSchema,
   filterRuleSchema,
+  normalizeAssigneeValue,
   sortRuleSchema,
 } from '@notesapp/shared'
 import type { Db } from '../../db/client'
@@ -653,10 +654,12 @@ export function createDatabasesRoutes(db: Db, collab: Hocuspocus, authSecret: st
 
         if (row) {
           const properties = row.properties as Record<string, unknown>
-          const assigneeId = properties.assignee
+          const assigneeIds = normalizeAssigneeValue(properties.assignee).filter(
+            (id) => id !== user.id,
+          )
           const taskTitle = readTaskTitle(properties)
 
-          if (typeof assigneeId === 'string' && assigneeId !== user.id) {
+          if (assigneeIds.length > 0) {
             await notificationsService.createTaskCommentNotifications(db, {
               actorId: user.id,
               actorName,
@@ -664,7 +667,7 @@ export function createDatabasesRoutes(db: Db, collab: Hocuspocus, authSecret: st
               boardId: databaseId,
               rowId,
               taskTitle,
-              recipientUserIds: [assigneeId],
+              recipientUserIds: assigneeIds,
             })
           }
         }

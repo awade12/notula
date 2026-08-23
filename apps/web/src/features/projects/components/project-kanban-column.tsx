@@ -1,5 +1,6 @@
 import { useRef, type DragEvent } from 'react'
 import type { PropertyDefinition } from '@notesapp/shared'
+import type { DatabaseRow } from '@/features/database/types'
 import type { BoardGroup } from '@/features/database/lib/group-rows'
 import type { FlatPage } from '@/features/workspace/lib/build-tree'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
@@ -15,11 +16,13 @@ import {
 } from './project-kanban-insert-slot'
 import { ProjectTaskCard } from './project-task-card'
 import { ProjectTaskQuickAdd } from './project-task-quick-add'
+import { countSubtasks } from '@/features/projects/lib/filter-top-level-tasks'
 
 type ProjectKanbanColumnProps = {
   spaceId: string
   boardId: string
   group: BoardGroup
+  allRows: DatabaseRow[]
   titlePropertyId: string
   labelProperty?: PropertyDefinition
   milestoneProperty?: PropertyDefinition
@@ -62,6 +65,7 @@ export function ProjectKanbanColumn({
   spaceId,
   boardId,
   group,
+  allRows,
   titlePropertyId,
   labelProperty,
   milestoneProperty,
@@ -155,6 +159,8 @@ export function ProjectKanbanColumn({
 
       <div
         className="flex min-h-0 flex-1 flex-col rounded-lg bg-white/[0.02] p-2"
+        data-testid="kanban-column"
+        data-column-id={columnId}
         onDragOver={handleColumnDragOver}
         onDragLeave={(event) => {
           if (!isDragLeave(event.currentTarget, event.relatedTarget)) return
@@ -186,6 +192,7 @@ export function ProjectKanbanColumn({
                 selected={selectedTaskId === row.id}
                 readOnly={readOnly}
                 isDragging={draggedTaskId === row.id}
+                subtaskCount={countSubtasks(allRows, row.id)}
                 onOpen={() => onOpenTask(row.id)}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}

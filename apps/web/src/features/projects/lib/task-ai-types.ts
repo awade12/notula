@@ -8,6 +8,7 @@ export type TaskAiCreateTask = {
   title: string
   description?: string
   status?: string
+  assigneeIds?: string[]
   assigneeId?: string | null
   labelIds?: string[]
 }
@@ -15,7 +16,7 @@ export type TaskAiCreateTask = {
 export type TaskAiProperty = {
   id: string
   name: string
-  type: 'text' | 'number' | 'select' | 'multi_select'
+  type: 'text' | 'number' | 'select' | 'multi_select' | 'relation'
   options?: Array<{ id: string; label: string }>
 }
 

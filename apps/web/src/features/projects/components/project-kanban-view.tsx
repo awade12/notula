@@ -9,6 +9,7 @@ import {
   resolveKanbanMoveInput,
   type ProjectKanbanDropTarget,
 } from '@/features/projects/lib/kanban-drop-target'
+import { filterTopLevelTasks } from '@/features/projects/lib/filter-top-level-tasks'
 import { useKanbanBoardDrag } from '@/features/projects/hooks/use-kanban-board-drag'
 import { ProjectKanbanColumn } from './project-kanban-column'
 
@@ -50,23 +51,24 @@ export function ProjectKanbanView({
 }: ProjectKanbanViewProps) {
   const createRow = useCreateRow(spaceId, databaseId)
   const moveKanbanTask = useMoveKanbanTask(spaceId, databaseId)
+  const boardRows = useMemo(() => filterTopLevelTasks(rows), [rows])
 
   const groups = useMemo(() => {
-    const all = groupRowsBySelect(rows, groupProperty, { includeEmptyGroup: false })
+    const all = groupRowsBySelect(boardRows, groupProperty, { includeEmptyGroup: false })
     if (hiddenGroupIds.length === 0) return all
     return all.filter((group) => group.id === null || !hiddenGroupIds.includes(group.id))
-  }, [groupProperty, hiddenGroupIds, rows])
+  }, [boardRows, groupProperty, hiddenGroupIds])
 
   const titlePropertyId = titleProperty?.id ?? 'title'
 
   function persistTaskDrop(taskId: string, target: ProjectKanbanDropTarget) {
-    const input = resolveKanbanMoveInput(rows, groups, taskId, target, groupProperty.id)
+    const input = resolveKanbanMoveInput(boardRows, groups, taskId, target, groupProperty.id)
     if (!input) return
     moveKanbanTask.mutate({ rowId: taskId, ...input })
   }
 
   const drag = useKanbanBoardDrag({
-    rows,
+    rows: boardRows,
     statusPropertyId: groupProperty.id,
     readOnly,
     onDrop: persistTaskDrop,
@@ -92,6 +94,7 @@ export function ProjectKanbanView({
           spaceId={spaceId}
           boardId={databaseId}
           group={group}
+          allRows={rows}
           titlePropertyId={titlePropertyId}
           labelProperty={labelProperty}
           milestoneProperty={milestoneProperty}

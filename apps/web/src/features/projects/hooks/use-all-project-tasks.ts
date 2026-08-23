@@ -8,7 +8,7 @@ export type AllProjectTask = {
   title: string
   snippet: string
   status: string | null
-  assigneeId: string | null
+  assigneeIds: string[]
   dueDate: string | null
   updatedAt: string
 }

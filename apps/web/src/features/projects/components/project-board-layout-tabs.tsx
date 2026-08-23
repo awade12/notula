@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
@@ -19,14 +19,9 @@ type ProjectBoardLayoutTabsProps = {
 
 const tabSpring = {
   type: 'spring' as const,
-  stiffness: 520,
-  damping: 38,
-  mass: 0.65,
-}
-
-const spinTransition = {
-  duration: 0.32,
-  ease: [0.22, 1, 0.36, 1] as const,
+  stiffness: 640,
+  damping: 42,
+  mass: 0.5,
 }
 
 export function ProjectBoardLayoutTabs({
@@ -34,12 +29,10 @@ export function ProjectBoardLayoutTabs({
   layoutMode,
   onLayoutModeChange,
 }: ProjectBoardLayoutTabsProps) {
-  const prefersReducedMotion = useReducedMotion()
   const containerRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef(new Map<ProjectBoardLayoutMode, HTMLButtonElement>())
   const [indicator, setIndicator] = useState({ x: 0, width: 0 })
   const [indicatorReady, setIndicatorReady] = useState(false)
-  const [spinDirection, setSpinDirection] = useState(1)
 
   const updateIndicator = useCallback(() => {
     const container = containerRef.current
@@ -66,10 +59,6 @@ export function ProjectBoardLayoutTabs({
 
   const handleTabClick = (mode: ProjectBoardLayoutMode) => {
     if (mode === layoutMode) return
-
-    const prevIndex = tabs.findIndex((tab) => tab.mode === layoutMode)
-    const nextIndex = tabs.findIndex((tab) => tab.mode === mode)
-    setSpinDirection(nextIndex > prevIndex ? 1 : -1)
     onLayoutModeChange(mode)
   }
 
@@ -77,24 +66,17 @@ export function ProjectBoardLayoutTabs({
     <div
       ref={containerRef}
       className="relative flex flex-wrap items-center gap-0.5 rounded-lg bg-white/[0.03] p-0.5"
-      style={{ perspective: 900 }}
     >
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-md bg-white/[0.07] [backface-visibility:hidden]"
-        style={{ transformOrigin: 'center center' }}
+        className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-md bg-white/[0.07]"
         initial={false}
         animate={{
           x: indicator.x,
           width: indicator.width,
           opacity: indicatorReady ? 1 : 0,
-          rotateY: prefersReducedMotion ? 0 : [spinDirection * 88, 0],
         }}
-        transition={{
-          x: tabSpring,
-          width: tabSpring,
-          rotateY: prefersReducedMotion ? { duration: 0 } : spinTransition,
-        }}
+        transition={tabSpring}
       />
 
       {tabs.map(({ mode, label, icon: Icon }) => {

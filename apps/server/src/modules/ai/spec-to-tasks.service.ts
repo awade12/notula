@@ -33,7 +33,7 @@ export async function breakSpecIntoTasks(
       "title": "specific task title",
       "description": "markdown details",
       "status": "option id if obvious",
-      "assigneeId": null,
+      "assigneeIds": [],
       "labelIds": []
     }
   ]

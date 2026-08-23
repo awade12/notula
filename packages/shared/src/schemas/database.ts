@@ -101,13 +101,14 @@ export const PROJECT_BOARD_SCHEMA: DatabaseSchema = {
       type: 'relation',
       config: { limit: 8 },
     },
-    {
-      id: PROJECT_BOARD_PROPERTY_IDS.linkedNote,
-      name: 'Note',
-      type: 'relation',
-      config: { limit: 1 },
-    },
-  ],
+  {
+    id: PROJECT_BOARD_PROPERTY_IDS.linkedNote,
+    name: 'Note',
+    type: 'relation',
+    config: { limit: 1 },
+  },
+  { id: PROJECT_BOARD_PROPERTY_IDS.parentTask, name: 'Parent task', type: 'text' },
+],
 }
 
 export function createDefaultRowValues(schema: DatabaseSchema): Record<string, unknown> {

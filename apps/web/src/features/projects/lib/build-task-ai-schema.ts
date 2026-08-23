@@ -33,6 +33,10 @@ function toTaskAiProperty(property: PropertyDefinition): TaskAiProperty | null {
     }
   }
 
+  if (property.type === 'relation') {
+    return { id: property.id, name: property.name, type: 'relation' }
+  }
+
   return null
 }
 

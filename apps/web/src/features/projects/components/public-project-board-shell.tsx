@@ -73,6 +73,7 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
               boardId={database.id}
               boardTitle={database.title}
               row={selectedTask}
+              rows={rows}
               groupProperty={groupProperty}
               titleProperty={titleProperty}
               labelProperty={labelProperty}
@@ -82,6 +83,8 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
               pages={[]}
               members={[]}
               readOnly
+              isPublicView
+              onOpenTask={setSelectedTaskId}
               onClose={() => setSelectedTaskId(undefined)}
             />
           ) : null

@@ -15,6 +15,7 @@ type ProjectTaskPanelProps = {
   boardId: string
   boardTitle: string
   row: DatabaseRow
+  rows?: DatabaseRow[]
   groupProperty: PropertyDefinition
   titleProperty: PropertyDefinition
   labelProperty?: PropertyDefinition
@@ -25,8 +26,10 @@ type ProjectTaskPanelProps = {
   pages: FlatPage[]
   members: SpaceMember[]
   readOnly?: boolean
+  isPublicView?: boolean
   connectionStatus?: ConnectionStatus
   taskUrl?: string
+  onOpenTask?: (taskId: string) => void
   onClose: () => void
 }
 
@@ -35,6 +38,7 @@ export function ProjectTaskPanel({
   boardId,
   boardTitle,
   row,
+  rows = [],
   groupProperty,
   titleProperty,
   labelProperty,
@@ -45,8 +49,10 @@ export function ProjectTaskPanel({
   pages,
   members,
   readOnly = false,
+  isPublicView = false,
   connectionStatus = 'synced',
   taskUrl,
+  onOpenTask,
   onClose,
 }: ProjectTaskPanelProps) {
   const liveRow = useLiveDatabaseRow(spaceId, boardId, row.id, row)
@@ -107,6 +113,7 @@ export function ProjectTaskPanel({
         spaceId={spaceId}
         boardId={boardId}
         row={liveRow}
+        rows={rows}
         groupProperty={groupProperty}
         titleProperty={titleProperty}
         labelProperty={labelProperty}
@@ -122,6 +129,8 @@ export function ProjectTaskPanel({
         linkedPageTitle={linkedPageTitle}
         connectionStatus={connectionStatus}
         readOnly={readOnly}
+        isPublicView={isPublicView}
+        onOpenTask={onOpenTask}
         onClose={onClose}
       />
     </ProjectTaskPanelFrame>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { PropertyDefinition } from '@notesapp/shared'
+import { type PropertyDefinition } from '@notesapp/shared'
 import { AiMissingKeyNotice } from '@/features/ai/components/ai-model-picker'
 import { notifyTaskAiApplied } from '@/features/notifications/hooks/use-notifications'
 import { useSession } from '@/features/auth/hooks/use-session'
@@ -24,7 +24,7 @@ type ProjectTaskAiTabProps = {
   linkedPageTitle?: string
   schemaProperties: PropertyDefinition[]
   members: SpaceMember[]
-  assigneeId?: string | null
+  assigneeIds?: string[]
   readOnly?: boolean
   variant?: 'panel' | 'sidebar'
 }
@@ -39,7 +39,7 @@ export function ProjectTaskAiTab({
   linkedPageTitle,
   schemaProperties,
   members,
-  assigneeId,
+  assigneeIds = [],
   readOnly = false,
   variant = 'panel',
 }: ProjectTaskAiTabProps) {
@@ -87,8 +87,9 @@ export function ProjectTaskAiTab({
     })
   }
 
-  async function notifyAssigneeIfNeeded(summaries: string[]) {
-    if (!assigneeId || assigneeId === session?.user?.id) return
+  async function notifyAssigneesIfNeeded(summaries: string[]) {
+    const recipients = assigneeIds.filter((userId) => userId !== session?.user?.id)
+    if (recipients.length === 0) return
 
     await notifyTaskAiApplied({
       spaceId,
@@ -96,7 +97,7 @@ export function ProjectTaskAiTab({
       rowId,
       taskTitle,
       summary: summaries.join(', '),
-      recipientUserIds: [assigneeId],
+      recipientUserIds: recipients,
     })
   }
 
@@ -114,7 +115,7 @@ export function ProjectTaskAiTab({
         updateCell: updateCell.mutateAsync,
       })
       markActionApplied(messageIndex, action.summary)
-      await notifyAssigneeIfNeeded([action.summary])
+      await notifyAssigneesIfNeeded([action.summary])
     } finally {
       setApplyingKey(null)
     }
@@ -142,7 +143,7 @@ export function ProjectTaskAiTab({
       for (const action of pending) {
         markActionApplied(messageIndex, action.summary)
       }
-      await notifyAssigneeIfNeeded(pending.map((action) => action.summary))
+      await notifyAssigneesIfNeeded(pending.map((action) => action.summary))
     } finally {
       setApplyingKey(null)
     }

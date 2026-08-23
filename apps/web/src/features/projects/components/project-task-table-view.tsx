@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { normalizeMultiSelectValue, type PropertyDefinition } from '@notesapp/shared'
 import type { DatabaseRow } from '@/features/database/types'
 import type { SpaceMember } from '@/features/workspace/hooks/use-space-members'
@@ -6,10 +7,9 @@ import {
   formatTaskDueDate,
   isTaskDueDateOverdue,
 } from '@/features/projects/lib/task-due-date'
-import {
-  memberInitialsFromName,
-  resolveAssigneeMember,
-} from '@/features/projects/components/project-task-assignee-field'
+import { resolveAssigneeMembers } from '@/features/projects/components/project-task-assignee-field'
+import { ProjectTaskAssigneeStack } from '@/features/projects/components/project-task-assignee-stack'
+import { filterTopLevelTasks } from '@/features/projects/lib/filter-top-level-tasks'
 import { cn } from '@/lib/cn'
 
 type ProjectTaskTableViewProps = {
@@ -56,7 +56,9 @@ export function ProjectTaskTableView({
   selectedTaskId,
   onOpenTask,
 }: ProjectTaskTableViewProps) {
-  if (rows.length === 0) {
+  const boardRows = useMemo(() => filterTopLevelTasks(rows), [rows])
+
+  if (boardRows.length === 0) {
     return (
       <div className="rounded-lg border border-border/60 bg-white/[0.02] px-4 py-10 text-center">
         <p className="text-sm text-text-primary/50">No tasks match the current filters.</p>
@@ -90,7 +92,7 @@ export function ProjectTaskTableView({
       </div>
 
       <ul className="divide-y divide-border/40">
-        {rows.map((row) => {
+        {boardRows.map((row) => {
           const statusOption = resolveSelectOption(groupProperty, row.properties[groupProperty.id])
           const labelOptions = resolveLabels(labelProperty, row.properties.label)
           const extraLabelCount =
@@ -103,7 +105,7 @@ export function ProjectTaskTableView({
           const priorityOption = resolveSelectOption(priorityProperty, row.properties.priority)
           const dueLabel = formatTaskDueDate(row.properties.due_date)
           const overdue = isTaskDueDateOverdue(row.properties.due_date)
-          const assignee = resolveAssigneeMember(members, row.properties.assignee)
+          const assignees = resolveAssigneeMembers(members, row.properties.assignee)
 
           return (
             <li key={row.id}>
@@ -192,13 +194,8 @@ export function ProjectTaskTableView({
                 </span>
 
                 <span className="flex justify-center">
-                  {assignee ? (
-                    <span
-                      className="flex size-6 items-center justify-center rounded-full bg-white/10 text-[10px] font-medium text-text-emphasis"
-                      title={assignee.name}
-                    >
-                      {memberInitialsFromName(assignee.name)}
-                    </span>
+                  {assignees.length > 0 ? (
+                    <ProjectTaskAssigneeStack members={assignees} size="md" />
                   ) : (
                     <span className="text-[11px] text-text-primary/30">—</span>
                   )}

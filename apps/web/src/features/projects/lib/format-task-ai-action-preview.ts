@@ -1,4 +1,4 @@
-import { PROJECT_BOARD_PROPERTY_IDS } from '@notesapp/shared'
+import { PROJECT_BOARD_PROPERTY_IDS, normalizeAssigneeValue } from '@notesapp/shared'
 import { normalizeTaskAiMarkdown } from './normalize-task-ai-markdown'
 import { projectTaskDescriptionToPlainText } from './project-task-description-content'
 import type { TaskAiAction, TaskAiMember, TaskAiProperty } from './task-ai-types'
@@ -26,10 +26,12 @@ function readMultiSelectLabels(property: TaskAiProperty, value: unknown) {
     .join(', ')
 }
 
-function readAssigneeLabel(members: TaskAiMember[], value: unknown) {
-  if (value === null || value === undefined || value === '') return 'Unassigned'
-  if (typeof value !== 'string') return String(value)
-  return members.find((member) => member.userId === value)?.name ?? value
+function readAssigneeLabels(members: TaskAiMember[], value: unknown) {
+  const ids = normalizeAssigneeValue(value)
+  if (ids.length === 0) return 'Unassigned'
+  return ids
+    .map((id) => members.find((member) => member.userId === id)?.name ?? id)
+    .join(', ')
 }
 
 function readDescriptionPreview(value: unknown) {
@@ -96,7 +98,7 @@ export function formatTaskAiActionPreview(input: {
     return {
       fieldName,
       summary: input.action.summary,
-      plainPreview: readAssigneeLabel(members, input.action.value),
+      plainPreview: readAssigneeLabels(members, input.action.value),
     }
   }
 

@@ -8,6 +8,7 @@ export type ProjectTaskSidebarTab = 'properties' | 'ai' | 'activity'
 type ProjectTaskSidebarTabsProps = {
   activeTab: ProjectTaskSidebarTab
   onChange: (tab: ProjectTaskSidebarTab) => void
+  hideTabs?: ProjectTaskSidebarTab[]
 }
 
 const TABS: Array<{
@@ -20,14 +21,21 @@ const TABS: Array<{
   { id: 'activity', label: 'Activity' },
 ]
 
-export function ProjectTaskSidebarTabs({ activeTab, onChange }: ProjectTaskSidebarTabsProps) {
+export function ProjectTaskSidebarTabs({
+  activeTab,
+  onChange,
+  hideTabs = [],
+}: ProjectTaskSidebarTabsProps) {
+  const visibleTabs = TABS.filter((tab) => !hideTabs.includes(tab.id))
+  if (visibleTabs.length <= 1) return null
+
   return (
     <div
       role="tablist"
       aria-label="Task panel sections"
       className="flex shrink-0 border-b border-border/50"
     >
-      {TABS.map((tab) => {
+      {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.id
 
         return (

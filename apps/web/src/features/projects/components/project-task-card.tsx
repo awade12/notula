@@ -14,9 +14,9 @@ import {
   isTaskDueDateOverdue,
 } from '@/features/projects/components/project-task-due-date-field'
 import {
-  memberInitialsFromName,
-  resolveAssigneeMember,
+  resolveAssigneeMembers,
 } from '@/features/projects/components/project-task-assignee-field'
+import { ProjectTaskAssigneeStack } from '@/features/projects/components/project-task-assignee-stack'
 import { useProjectTaskRowMenu } from '@/features/projects/hooks/use-project-task-row-menu'
 import {
   resolveKanbanCardDropPlacement,
@@ -39,6 +39,7 @@ type ProjectTaskCardProps = {
   selected?: boolean
   readOnly?: boolean
   isDragging?: boolean
+  subtaskCount?: number
   onOpen: (taskId?: string) => void
   onDragStart: (taskId: string) => void
   onDragEnd: () => void
@@ -81,6 +82,7 @@ export function ProjectTaskCard({
   selected = false,
   readOnly = false,
   isDragging = false,
+  subtaskCount = 0,
   onOpen,
   onDragStart,
   onDragEnd,
@@ -146,7 +148,7 @@ export function ProjectTaskCard({
       : null
   const dueLabel = formatTaskDueDate(row.properties.due_date)
   const overdue = isTaskDueDateOverdue(row.properties.due_date)
-  const assignee = resolveAssigneeMember(members, row.properties.assignee)
+  const assignees = resolveAssigneeMembers(members, row.properties.assignee)
 
   const hasMeta = Boolean(
     labelOptions.length > 0 ||
@@ -154,8 +156,9 @@ export function ProjectTaskCard({
       priorityOption ||
       estimate !== null ||
       dueLabel ||
-      assignee ||
-      linkedPage,
+      assignees.length > 0 ||
+      linkedPage ||
+      subtaskCount > 0,
   )
 
   function handleDragStart(event: DragEvent<HTMLDivElement>) {
@@ -228,6 +231,8 @@ export function ProjectTaskCard({
         onDrop={handleDrop}
         onClick={handleClick}
         onContextMenu={rowMenu.onContextMenu}
+        data-testid="project-task-card"
+        data-task-id={row.id}
         className={cn(
           'relative w-full rounded-md border border-border/40 bg-background/50 p-2.5 text-left shadow-sm',
           'transition-[opacity,transform,border-color,box-shadow] duration-150 ease-out',
@@ -289,12 +294,12 @@ export function ProjectTaskCard({
                 {dueLabel}
               </span>
             ) : null}
-            {assignee ? (
-              <span
-                className="ml-auto flex size-5 items-center justify-center rounded-full bg-white/10 text-[9px] font-medium text-text-emphasis"
-                title={assignee.name}
-              >
-                {memberInitialsFromName(assignee.name)}
+            {assignees.length > 0 ? (
+              <ProjectTaskAssigneeStack members={assignees} className="ml-auto" />
+            ) : null}
+            {subtaskCount > 0 ? (
+              <span className="text-[10px] tabular-nums text-text-primary/45">
+                {subtaskCount} sub{subtaskCount === 1 ? '' : 's'}
               </span>
             ) : null}
             {linkedPage ? (
