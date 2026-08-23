@@ -94,7 +94,7 @@ export function ProjectTaskCard({
   const duplicateTask = useDuplicateTask(spaceId, boardId)
   const moveTask = useMoveTaskToBoard(spaceId, boardId)
   const updateCell = useUpdateCell(spaceId, boardId)
-  const { data: boards = [] } = useProjectBoards(spaceId)
+  const { data: boards = [] } = useProjectBoards(spaceId, { enabled: !readOnly })
   const didDragRef = useRef(false)
 
   const doneStatusId =

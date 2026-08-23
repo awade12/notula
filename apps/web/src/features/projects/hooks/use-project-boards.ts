@@ -11,9 +11,10 @@ export type ProjectBoardSummary = {
   updatedAt: string
 }
 
-export function useProjectBoards(spaceId: string) {
+export function useProjectBoards(spaceId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['project-boards', spaceId],
+    enabled: options?.enabled ?? true,
     queryFn: async () => {
       const response = await apiFetch(
         `/api/spaces/${spaceId}/databases?projectBoards=true`,
