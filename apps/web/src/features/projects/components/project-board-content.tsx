@@ -344,8 +344,9 @@ export function ProjectBoardContent({
           <p className="text-sm text-text-primary/45">Loading tasks…</p>
         ) : (
           <div className="relative min-h-0 flex-1">
+            <div className="absolute inset-0">
             {visitedLayouts.has('board') ? (
-            <div className={layoutMode === 'board' ? 'min-h-0' : 'hidden'} aria-hidden={layoutMode !== 'board'}>
+            <div className={layoutMode === 'board' ? 'h-full min-h-0' : 'hidden'} aria-hidden={layoutMode !== 'board'}>
               <ProjectKanbanView
                 spaceId={spaceId}
                 databaseId={boardId}
@@ -407,6 +408,7 @@ export function ProjectBoardContent({
               />
             </div>
             ) : null}
+            </div>
           </div>
         )}
 

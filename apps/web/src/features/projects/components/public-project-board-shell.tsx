@@ -63,11 +63,12 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-sidebar">
-      <SlidePanelLayout
-        open={panelOpen}
-        panelWidth="min(calc(100vw - 3rem), 960px)"
-        contentClassName="flex min-h-0 flex-1 flex-col overflow-auto scrollbar-none"
-        panel={
+      <div className="scrollbar-none flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <SlidePanelLayout
+          open={panelOpen}
+          panelWidth="min(calc(100vw - 3rem), 960px)"
+          contentClassName="flex h-full min-h-0 flex-col"
+          panel={
           selectedTask ? (
             <ProjectTaskPanel
               spaceId={database.spaceId}
@@ -91,7 +92,7 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
           ) : null
         }
       >
-        <div className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 flex-col px-6 py-8">
+        <div className="mx-auto flex h-full min-h-0 w-full max-w-[1400px] flex-col px-6 py-8">
           <header className="mb-6 flex shrink-0 flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
               <span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
@@ -114,24 +115,27 @@ export function PublicProjectBoardShell({ payload }: PublicProjectBoardShellProp
           </header>
 
           <div className="relative min-h-0 flex-1">
-            <ProjectKanbanView
-              spaceId={database.spaceId}
-              databaseId={database.id}
-              rows={rows}
-              groupProperty={groupProperty}
-              titleProperty={titleProperty}
-              labelProperty={labelProperty}
-              milestoneProperty={milestoneProperty}
-              priorityProperty={priorityProperty}
-              linkedNoteProperty={linkedNoteProperty}
-              hiddenGroupIds={hiddenGroupIds}
-              selectedTaskId={selectedTaskId}
-              readOnly
-              onOpenTask={setSelectedTaskId}
-            />
+            <div className="absolute inset-0">
+              <ProjectKanbanView
+                spaceId={database.spaceId}
+                databaseId={database.id}
+                rows={rows}
+                groupProperty={groupProperty}
+                titleProperty={titleProperty}
+                labelProperty={labelProperty}
+                milestoneProperty={milestoneProperty}
+                priorityProperty={priorityProperty}
+                linkedNoteProperty={linkedNoteProperty}
+                hiddenGroupIds={hiddenGroupIds}
+                selectedTaskId={selectedTaskId}
+                readOnly
+                onOpenTask={setSelectedTaskId}
+              />
+            </div>
           </div>
         </div>
       </SlidePanelLayout>
+      </div>
     </div>
   )
 }

@@ -158,7 +158,7 @@ export function ProjectKanbanColumn({
       </div>
 
       <div
-        className="flex min-h-0 flex-1 flex-col rounded-lg bg-white/[0.02] p-2"
+        className="flex h-full min-h-0 flex-1 flex-col rounded-lg bg-white/[0.02] p-2"
         data-testid="kanban-column"
         data-column-id={columnId}
         onDragOver={handleColumnDragOver}
@@ -170,7 +170,7 @@ export function ProjectKanbanColumn({
       >
         <div
           ref={scrollRef}
-          className="scrollbar-none flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+          className="scrollbar-none touch-scroll-y flex min-h-0 flex-1 touch-pan-y flex-col gap-2 overflow-x-hidden overflow-y-auto"
         >
           {isEmpty && isDragging ? <ProjectKanbanEmptyDropZone active={isColumnActive} /> : null}
 
