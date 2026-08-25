@@ -102,6 +102,11 @@ html[data-theme='light'] .notes-editor [data-content-type='codeBlock'] .bn-inlin
   }
 }
 
+@utility touch-scroll-y {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
 @keyframes sidebar-menu-in {
   from {
     opacity: 0;

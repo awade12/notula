@@ -87,7 +87,7 @@ export function ProjectKanbanView({
   }
 
   return (
-    <div className="flex h-full min-h-0 gap-4 overflow-x-auto pb-4 scrollbar-none">
+    <div className="flex h-full min-h-0 gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-4 scrollbar-none">
       {groups.map((group) => (
         <ProjectKanbanColumn
           key={group.id ?? 'empty'}

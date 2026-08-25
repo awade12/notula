@@ -12,7 +12,7 @@ function PublicBoardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-sidebar">
+      <div className="flex h-dvh items-center justify-center overflow-auto bg-sidebar">
         <p className="text-sm tracking-dashboard text-text-primary/55">Loading board…</p>
       </div>
     )
@@ -20,7 +20,7 @@ function PublicBoardPage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-sidebar px-6">
+      <div className="flex h-dvh items-center justify-center overflow-auto bg-sidebar px-6">
         <div className="text-center">
           <h1 className="text-lg font-medium tracking-dashboard text-text-emphasis">Board not found</h1>
           <p className="mt-2 text-sm tracking-dashboard text-text-primary/55">
